@@ -499,7 +499,9 @@ string PostAnalyzeRequest(string payload)
    uchar data[];
    uchar result[];
    string responseHeaders = "";
-   StringToCharArray(payload, data, 0, WHOLE_ARRAY, CP_UTF8);
+   int size = StringToCharArray(payload, data, 0, WHOLE_ARRAY, CP_UTF8);
+   if(size > 0)
+      ArrayResize(data, size - 1);
    int timeout = 30000;
    ResetLastError();
    int status = WebRequest("POST", ApiUrl, headers, timeout, data, result, responseHeaders);
