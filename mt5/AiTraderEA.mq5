@@ -308,7 +308,8 @@ string TryCaptureChartImageBase64()
 
 string NormalizeSymbolForNews(string symbol)
 {
-   string s = StringUpper(symbol);
+   string s = symbol;
+   StringToUpper(s);
    StringReplace(s, ".", "");
    StringReplace(s, "_", "");
    StringReplace(s, "-", "");
