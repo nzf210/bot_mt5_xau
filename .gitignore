@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local env / secrets
+.env
+
+# Runtime state and logs
+logs/
+data/bot_state.sqlite3
+data/exports/
+data/training/
+models/current/*.pkl
+models/current/*.json
+models/candidates/*.pkl
+models/candidates/*.json
+models/reports/*.json
+models/reports/*.jsonl
+models/reports/model_backups/
+
+# MT5 local artifacts
+*.csv

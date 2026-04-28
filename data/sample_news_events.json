@@ -1,0 +1,16 @@
+[
+  {
+    "event_id": "usd-cpi-2026-04-27",
+    "title": "US CPI m/m",
+    "currency": "USD",
+    "impact": "high",
+    "event_time": "2026-04-27T16:30:00+00:00"
+  },
+  {
+    "event_id": "eur-pmi-2026-04-27",
+    "title": "EU Manufacturing PMI",
+    "currency": "EUR",
+    "impact": "medium",
+    "event_time": "2026-04-27T08:00:00+00:00"
+  }
+]

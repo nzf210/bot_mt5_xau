@@ -1,0 +1,14 @@
+{
+  "symbol": "XAUUSD",
+  "timeframe": "M15",
+  "mode": "demo",
+  "decision": "BUY",
+  "position_ticket": "123456789",
+  "entry_price": 2345.10,
+  "close_price": 2347.50,
+  "stop_loss": 2342.80,
+  "take_profit": 2348.90,
+  "pnl": 24.00,
+  "result": "win",
+  "notes": "tp_partial_or_manual_close"
+}

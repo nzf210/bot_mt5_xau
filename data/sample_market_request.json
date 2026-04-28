@@ -1,0 +1,44 @@
+{
+  "symbol": "XAUUSD",
+  "timeframe": "M15",
+  "higher_timeframe": "H1",
+  "session": "London",
+  "bid": 2345.12,
+  "ask": 2345.30,
+  "spread": 18,
+  "ohlc": [
+    {"t": "2026-04-27 14:00", "o": 2342.1, "h": 2343.5, "l": 2341.8, "c": 2343.2},
+    {"t": "2026-04-27 14:15", "o": 2343.2, "h": 2344.0, "l": 2342.9, "c": 2343.7},
+    {"t": "2026-04-27 14:30", "o": 2343.7, "h": 2345.4, "l": 2343.5, "c": 2345.1}
+  ],
+  "indicators": {
+    "ema20": 2343.85,
+    "ema50": 2342.9,
+    "rsi14": 61.4,
+    "macd_main": 1.22,
+    "macd_signal": 0.88,
+    "atr14": 2.1
+  },
+  "support_resistance": {
+    "support_1": 2342.0,
+    "support_2": 2339.8,
+    "resistance_1": 2346.0,
+    "resistance_2": 2348.5
+  },
+  "trend_context": {
+    "htf_trend": "bullish",
+    "market_structure": "higher_highs_higher_lows",
+    "momentum": "bullish"
+  },
+  "position_context": {
+    "open_positions": 0,
+    "has_buy_position": false,
+    "has_sell_position": false
+  },
+  "news_context": {
+    "mt5_news_available": true,
+    "mt5_blackout_active": false,
+    "mt5_reason": ""
+  },
+  "mode": "dry_run"
+}
