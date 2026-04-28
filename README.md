@@ -65,7 +65,9 @@ Goal: real-money trading with strict protection.
 - Use one symbol, one timeframe, smallest lot, one open position max
 
 ## Quick start
-### 1. Create venv and install
+
+### Linux or macOS
+#### 1. Create venv and install
 ```bash
 cd mt5_ai_bot
 python3 -m venv .venv
@@ -73,14 +75,48 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure env
+#### 2. Configure env
 ```bash
 cp .env.example .env
 # edit .env and put your Gemini API key
 ```
 
-### 3. Run API
+#### 3. Run API
 ```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### Windows
+#### 1. Create venv and install
+```powershell
+cd mt5_ai_bot
+py -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, run:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\activate
+```
+
+For Command Prompt use:
+```bat
+cd mt5_ai_bot
+py -m venv .venv
+.venv\Scripts\activate.bat
+pip install -r requirements.txt
+```
+
+#### 2. Configure env
+```powershell
+copy .env.example .env
+```
+Then edit `.env` and put your Gemini API key.
+
+#### 3. Run API
+```powershell
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -133,6 +169,9 @@ curl -X POST http://127.0.0.1:8000/analyze \
 ### 6. Wire MT5
 - In MT5, add `http://127.0.0.1:8000` to allowed WebRequest URLs.
 - Copy `mt5/AiTraderEA.mq5` into your MT5 Experts folder.
+- On Windows this is usually under one of these paths:
+  - `%APPDATA%\MetaQuotes\Terminal\<instance-id>\MQL5\Experts\`
+  - or from MT5 use `File -> Open Data Folder`, then open `MQL5\Experts`
 - Compile in MetaEditor.
 - Start with `DryRun=true`.
 - Attach EA to one chart only.
@@ -211,6 +250,21 @@ Notes:
 - `check_rollback_trigger.py` gives a simple rollback signal scaffold if weak outcomes persist.
 - `approve_candidate_config.py` merges the candidate into `.env` and creates a timestamped backup first.
 - `rollback_env_config.py` restores the latest backup.
+
+## Running on Windows, recommended flow
+1. Open PowerShell in the project folder.
+2. Activate the virtual environment:
+```powershell
+.\.venv\Scripts\activate
+```
+3. Start the API:
+```powershell
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+4. Open MT5 on the same Windows machine.
+5. Add `http://127.0.0.1:8000` to MT5 WebRequest allowlist.
+6. Compile and attach `AiTraderEA.mq5`.
+7. Start with `DryRun=true`, then move to demo only after logs look clean.
 
 ## Live safety
 Never start with live mode.
