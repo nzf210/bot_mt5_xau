@@ -40,6 +40,7 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
         "decision": decision.model_dump(),
         "decision_engine": "local",
     })
+    print(f"[analyze] local decision symbol={market.symbol} timeframe={market.timeframe} mode={market.mode} decision={decision.decision} confidence={decision.confidence} rr={decision.risk_reward} filter={decision.filter_reason} reason={decision.reason}")
     return AnalyzeResponse(ok=True, phase=phase, decision=decision, raw_model_text=raw_model_text)
 
 
