@@ -156,6 +156,43 @@
 
 <div class="grid two">
   <section class="card">
+    <h2>LLM Periodic Review</h2>
+    <dl class="kv">
+      <div><dt>Available</dt><dd>{{ summary.llm_review.available }}</dd></div>
+      <div><dt>Enabled</dt><dd>{{ summary.llm_review.settings.enabled }}</dd></div>
+      <div><dt>Cadence</dt><dd>{{ summary.llm_review.settings.cadence }}</dd></div>
+      <div><dt>Last Run</dt><dd>{{ summary.llm_review.settings.last_run_at or '-' }}</dd></div>
+      <div><dt>Next Run</dt><dd>{{ summary.llm_review.settings.next_run_at or '-' }}</dd></div>
+      <div><dt>Last Status</dt><dd>{{ summary.llm_review.settings.last_status or '-' }}</dd></div>
+    </dl>
+    <h3>Summary</h3>
+    <ul>
+      {% for line in summary.llm_review.summary %}
+      <li>{{ line }}</li>
+      {% else %}
+      <li class="muted">No periodic LLM review output yet</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/ops/llm-review/settings" class="action-form">
+      <label for="llm_review_enabled">Enabled</label>
+      <select id="llm_review_enabled" name="enabled">
+        <option value="true" {% if summary.llm_review.settings.enabled %}selected{% endif %}>true</option>
+        <option value="false" {% if not summary.llm_review.settings.enabled %}selected{% endif %}>false</option>
+      </select>
+      <label for="llm_review_cadence">Cadence</label>
+      <select id="llm_review_cadence" name="cadence">
+        {% for cadence in ['manual_only','1h','3h','6h','12h','24h'] %}
+        <option value="{{ cadence }}" {% if cadence == summary.llm_review.settings.cadence %}selected{% endif %}>{{ cadence }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Update LLM Review Settings</button>
+    </form>
+    <form method="post" action="/ops/llm-review/run-now" class="action-form">
+      <button type="submit">Run LLM Review Now</button>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>Approval Summary</h2>
     <dl class="kv">
       <div><dt>Available</dt><dd>{{ summary.approval.available }}</dd></div>

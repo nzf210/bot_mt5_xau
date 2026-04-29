@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.services.kill_switch_service import set_kill_switch
+from app.services.llm_review_settings_service import update_llm_review_settings
 from app.services.ops_summary_service import build_ops_summary
 from app.services.profile_service import set_active_profile_mode
 
@@ -130,3 +131,23 @@ async def ops_run_learning_cycle_manual(confirm: str = Form("")) -> RedirectResp
         return RedirectResponse(url=f"/ops?error=learning_run_cycle_failed:{out}", status_code=303)
     _run_script("scripts/build_approval_summary.py")
     return RedirectResponse(url="/ops?message=learning_run_cycle_ok", status_code=303)
+
+
+@router.post("/ops/llm-review/settings")
+async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: str = Form("3h")) -> RedirectResponse:
+    normalized = enabled.strip().lower()
+    if normalized not in {"true", "false"}:
+        return RedirectResponse(url=f"/ops?error=invalid_llm_review_enabled:{enabled}", status_code=303)
+    try:
+        update_llm_review_settings(enabled=(normalized == "true"), cadence=cadence)
+    except ValueError as exc:
+        return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
+    return RedirectResponse(url="/ops?message=llm_review_settings_updated", status_code=303)
+
+
+@router.post("/ops/llm-review/run-now")
+async def ops_run_llm_review_now() -> RedirectResponse:
+    ok, out = _run_script("scripts/run_llm_periodic_review.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=llm_review_run_failed:{out}", status_code=303)
+    return RedirectResponse(url="/ops?message=llm_review_run_ok", status_code=303)

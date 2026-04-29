@@ -6,6 +6,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.services.kill_switch_service import get_kill_switch
+from app.services.llm_review_settings_service import load_llm_review_settings
 from app.services.profile_service import get_active_profile_mode, get_profile_settings, list_profile_modes
 from app.services.provider_registry import get_provider_status_summary
 from app.services.result_store import fetch_trade_results_for_day, init_result_store, sum_pnl_for_day
@@ -234,6 +235,30 @@ def _load_approval_summary() -> dict:
     return payload
 
 
+def _load_llm_review_summary() -> dict:
+    settings = load_llm_review_settings()
+    path = Path("data/exports/llm_periodic_review.json")
+    if not path.exists():
+        return {
+            "available": False,
+            "settings": settings,
+            "summary": [],
+            "recommended_actions": [],
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {
+            "available": False,
+            "settings": settings,
+            "summary": [],
+            "recommended_actions": [],
+        }
+    payload["available"] = True
+    payload.setdefault("settings", settings)
+    return payload
+
+
 def build_ops_summary() -> dict:
     settings = get_settings()
     init_state_store()
@@ -247,6 +272,7 @@ def build_ops_summary() -> dict:
     pair_session_policy = _load_pair_session_policy_summary()
     learning_cycle = _load_learning_cycle_summary()
     approval = _load_approval_summary()
+    llm_review = _load_llm_review_summary()
 
     return {
         "ok": True,
@@ -278,5 +304,6 @@ def build_ops_summary() -> dict:
         "pair_session_policy": pair_session_policy,
         "learning_cycle": learning_cycle,
         "approval": approval,
+        "llm_review": llm_review,
         "readiness": _build_readiness(review, kill_switch, mode),
     }
