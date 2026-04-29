@@ -35,3 +35,14 @@ def log_trade_event(event_type: str, payload: dict) -> None:
         "event_type": event_type,
         **payload,
     })
+
+
+def log_analyze_request(market: MarketRequest) -> None:
+    _append_jsonl(settings.event_log_path, {
+        "time": utc_now_iso(),
+        "event_type": "analyze_request_received",
+        "symbol": market.symbol,
+        "timeframe": market.timeframe,
+        "mode": market.mode,
+        "market": market.model_dump(),
+    })

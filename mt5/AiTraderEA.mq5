@@ -20,6 +20,8 @@ input int FastEma = 20;
 input int SlowEma = 50;
 input string VisionImageMime = "image/png";
 input string Mt5LogFileName = "mt5_ai_bridge_log.csv";
+input bool SaveMt5PayloadFiles = true;
+input string Mt5PayloadFolder = "mt5_payloads";
 input bool EnableMt5NewsGuard = true;
 input int NewsHighImpactBeforeMinutes = 30;
 input int NewsHighImpactAfterMinutes = 30;
@@ -87,6 +89,8 @@ void OnTick()
    if(!IsNewCandle())
       return;
 
+   Print("New candle detected. Symbol=", _Symbol, " TF=", TimeframeToString(PERIOD_CURRENT), " Mode=", GetModeString());
+
    string newsReason = "";
    if(HasMt5NewsBlackout(_Symbol, newsReason))
    {
@@ -103,15 +107,21 @@ void OnTick()
       return;
    }
 
+   Print("Payload built. bytes=", StringLen(payload));
+   SaveDebugSnapshot("request", payload);
+
    string response = PostAnalyzeRequest(payload);
    if(response == "")
    {
       Print("Analyze request returned empty response");
+      SaveDebugSnapshot("response_empty", "");
       LogBridgeEvent("analyze_empty_response", payload, "", false, "empty_response");
       return;
    }
 
+   Print("Analyze response length=", StringLen(response));
    Print("Analyze response: ", response);
+   SaveDebugSnapshot("response", response);
 
    DecisionResult result;
    if(!ParseDecisionFromResponse(response, result))
@@ -633,6 +643,35 @@ void LogBridgeEvent(string eventName, string payload, string response, bool pass
    FileSeek(handle, 0, SEEK_END);
    FileWrite(handle, TimeToString(TimeCurrent(), TIME_DATE | TIME_MINUTES | TIME_SECONDS), eventName, _Symbol, "", passedFilter ? "true" : "false", reason, payload, response);
    FileClose(handle);
+}
+
+string BuildSnapshotFileName(string kind)
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   return StringFormat("%s\\%04d-%02d-%02d_%02d-%02d-%02d_%s_%s_%s.json",
+      Mt5PayloadFolder,
+      dt.year, dt.mon, dt.day, dt.hour, dt.min, dt.sec,
+      NormalizeSymbolForNews(_Symbol),
+      TimeframeToString(PERIOD_CURRENT),
+      kind);
+}
+
+void SaveDebugSnapshot(string kind, string content)
+{
+   if(!SaveMt5PayloadFiles)
+      return;
+   FolderCreate(Mt5PayloadFolder);
+   string fileName = BuildSnapshotFileName(kind);
+   int handle = FileOpen(fileName, FILE_WRITE | FILE_TXT | FILE_ANSI);
+   if(handle == INVALID_HANDLE)
+   {
+      Print("Failed to open snapshot file: ", fileName, " error=", GetLastError());
+      return;
+   }
+   FileWriteString(handle, content);
+   FileClose(handle);
+   Print("Saved snapshot: ", fileName);
 }
 
 string BuildTradeResultPayload(DecisionResult &result, string positionTicket, double closePrice, double pnl, string finalResult, string notes)

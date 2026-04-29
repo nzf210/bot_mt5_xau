@@ -3,7 +3,7 @@ from app.config import get_settings
 from app.schemas import AnalyzeResponse, MarketRequest
 from app.services.decision_parser import build_wait_decision, parse_trade_decision, validate_trade_decision
 from app.services.gemini_client import analyze_with_gemini
-from app.services.logger_service import log_ai_decision, log_trade_event
+from app.services.logger_service import log_ai_decision, log_trade_event, log_analyze_request
 from app.services.risk_filter import apply_risk_filter
 from pydantic import BaseModel
 from app.services.review_service import build_daily_review, build_symbol_review, build_timeframe_review
@@ -22,12 +22,20 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
     settings = get_settings()
     phase = "A"
     raw_model_text = ""
+    log_analyze_request(market)
     try:
         raw_model_text = await (analyze_with_vision(market) if settings.enable_vision and market.chart_image_base64 else analyze_with_gemini(market))
         phase = "D" if settings.enable_vision and market.chart_image_base64 else "A"
     except Exception as exc:
         decision = build_wait_decision(f"gemini_request_failed:{type(exc).__name__}")
         log_ai_decision(market, raw_model_text, decision, phase)
+        log_trade_event("gemini_request_failed", {
+            "symbol": market.symbol,
+            "timeframe": market.timeframe,
+            "mode": market.mode,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        })
         raise HTTPException(status_code=502, detail=decision.reason)
 
     decision = parse_trade_decision(raw_model_text)
