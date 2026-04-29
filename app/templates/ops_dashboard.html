@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if message %}
+<section class="flash flash-success">{{ message }}</section>
+{% endif %}
+{% if error %}
+<section class="flash flash-error">{{ error }}</section>
+{% endif %}
+
+<div class="grid two">
+  <section class="card">
+    <h2>Readiness</h2>
+    <div class="status status-{{ summary.readiness.level }}">{{ summary.readiness.level|upper }}</div>
+    <ul>
+      {% for reason in summary.readiness.reasons %}
+      <li>{{ reason }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>App Runtime</h2>
+    <dl class="kv">
+      <div><dt>App</dt><dd>{{ summary.app.name }}</dd></div>
+      <div><dt>Env</dt><dd>{{ summary.app.env }}</dd></div>
+      <div><dt>Host</dt><dd>{{ summary.app.host }}:{{ summary.app.port }}</dd></div>
+      <div><dt>Vision</dt><dd>{{ summary.runtime.vision_enabled }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Guardrails</h2>
+    <dl class="kv">
+      <div><dt>Mode</dt><dd>{{ summary.guardrails.mode }}</dd></div>
+      <div><dt>Emergency Stop</dt><dd>{{ summary.guardrails.emergency_stop }}</dd></div>
+      <div><dt>Allow Live</dt><dd>{{ summary.guardrails.allow_live_trading }}</dd></div>
+      <div><dt>Max Daily Loss</dt><dd>{{ summary.guardrails.max_daily_loss }}</dd></div>
+      <div><dt>Allowed Sessions</dt><dd>{{ summary.guardrails.allowed_sessions | join(', ') }}</dd></div>
+    </dl>
+    <form method="post" action="/ops/profile" class="action-form">
+      <label for="mode">Active Profile</label>
+      <select id="mode" name="mode">
+        {% for mode in summary.guardrails.available_modes %}
+        <option value="{{ mode }}" {% if mode == summary.guardrails.mode %}selected{% endif %}>{{ mode }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Update Profile</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Kill Switch</h2>
+    <dl class="kv">
+      <div><dt>Active</dt><dd>{{ summary.kill_switch.active }}</dd></div>
+      <div><dt>Reason</dt><dd>{{ summary.kill_switch.reason or '-' }}</dd></div>
+      <div><dt>Updated</dt><dd>{{ summary.kill_switch.updated_at or '-' }}</dd></div>
+    </dl>
+    <form method="post" action="/ops/kill-switch" class="action-form">
+      <label for="active">Set Kill Switch</label>
+      <select id="active" name="active">
+        <option value="true">true</option>
+        <option value="false">false</option>
+      </select>
+      <label for="reason">Reason</label>
+      <input id="reason" name="reason" type="text" placeholder="manual_control" />
+      <button type="submit">Apply Kill Switch</button>
+    </form>
+  </section>
+</div>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Provider</h2>
+    <dl class="kv">
+      <div><dt>Priority</dt><dd>{{ summary.provider.priority | join(', ') }}</dd></div>
+      <div><dt>CLI Enabled</dt><dd>{{ summary.provider.cli_enabled }}</dd></div>
+      <div><dt>API Enabled</dt><dd>{{ summary.provider.api_enabled }}</dd></div>
+      <div><dt>Default Model</dt><dd>{{ summary.provider.default_model }}</dd></div>
+      <div><dt>Policy</dt><dd>{{ summary.provider.policy }}</dd></div>
+    </dl>
+    <h3>Registry Status</h3>
+    <ul>
+      {% for provider in summary.provider.providers %}
+      <li>
+        <strong>{{ provider.name }}</strong>
+        , {{ provider.status }}
+        , {{ provider.auth_mode }}
+        {% if provider.model %}, model={{ provider.model }}{% endif %}
+      </li>
+      {% else %}
+      <li class="muted">No provider entries</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Recent Activity</h2>
+    <dl class="kv">
+      <div><dt>Mode</dt><dd>{{ summary.activity.latest_mode or '-' }}</dd></div>
+      <div><dt>Symbol</dt><dd>{{ summary.activity.latest_symbol or '-' }}</dd></div>
+      <div><dt>Timeframe</dt><dd>{{ summary.activity.latest_timeframe or '-' }}</dd></div>
+      <div><dt>Phase</dt><dd>{{ summary.activity.latest_phase or '-' }}</dd></div>
+      <div><dt>Decisions Logged</dt><dd>{{ summary.activity.decision_count }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Trade Summary</h2>
+    <dl class="kv">
+      <div><dt>Trades Today</dt><dd>{{ summary.runtime.trade_results_today }}</dd></div>
+      <div><dt>PNL Today</dt><dd>{{ summary.runtime.pnl_today }}</dd></div>
+      <div><dt>Wins</dt><dd>{{ summary.reviews.daily.trade_results.wins }}</dd></div>
+      <div><dt>Losses</dt><dd>{{ summary.reviews.daily.trade_results.losses }}</dd></div>
+      <div><dt>Win Rate</dt><dd>{{ summary.reviews.daily.trade_results.win_rate }}%</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Decision Summary</h2>
+    <div class="chips">
+      {% for key, value in summary.reviews.daily.decision_counts.items() %}
+      <span class="chip">{{ key }}: {{ value }}</span>
+      {% else %}
+      <span class="muted">No decisions yet</span>
+      {% endfor %}
+    </div>
+    <h3>Top Filter Reasons</h3>
+    <ul>
+      {% for key, value in summary.reviews.daily.top_filter_reasons.items() %}
+      <li>{{ key or 'none' }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No filter reasons yet</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

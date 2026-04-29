@@ -3,13 +3,15 @@
 A phased trading bot scaffold built for MT5 execution, Python orchestration, and Gemini analysis.
 
 ## What is included
-- FastAPI service with `/analyze`, `/health`, `/review/daily`, `/review/symbol/{symbol}`, `/review/timeframe/{timeframe}`, `/trade-result`, `/profile/{mode}`, `/kill-switch`, and `/news/cache`
+- FastAPI service with `/analyze`, `/health`, `/review/daily`, `/review/symbol/{symbol}`, `/review/timeframe/{timeframe}`, `/trade-result`, `/profile/{mode}`, `/kill-switch`, `/news/cache`, `/ops/summary`, and `/ops`
+- Server-rendered internal ops control panel for operational summary and safe controls
 - Structured market request and decision response schemas
-- Gemini provider orchestration with CLI-first fallback to API
-- Gemini client for text and optional vision flow
+- CLI-first LLM provider orchestration with registry-based fallback
+- Gemini CLI client for text and optional vision flow
+- Optional Gemini API fallback path when explicitly enabled
 - Decision parsing and schema validation
 - Risk filter with emergency stop, session checks, spread, confidence, RR, duplicate signal, daily trade caps, timestamp-based cooldown, max daily loss guard, and external news blackout checks
-- Persistent SQLite state for duplicate signal, cooldown, daily trade counting, and news event cache
+- Persistent SQLite state for duplicate signal, cooldown, daily trade counting, news event cache, and active profile selection
 - Trade result ingest and daily performance aggregation
 - Profile-based behavior for dry-run/demo/live
 - Symbol normalization and currency mapping service for hybrid news guard
@@ -82,14 +84,19 @@ cp .env.example .env
 # edit .env and put your Gemini API key
 ```
 
-Provider priority defaults to Gemini CLI first, then API fallback:
+Provider priority defaults to Gemini CLI first, then OpenAI Codex CLI if available, then optional API fallback:
 ```env
-GEMINI_PROVIDER_PRIORITY=cli,api
+GEMINI_PROVIDER_PRIORITY=gemini_cli,openai_cli,gemini_api
 GEMINI_CLI_ENABLED=true
-GEMINI_API_ENABLED=true
+OPENAI_CLI_ENABLED=false
+GEMINI_API_ENABLED=false
 ```
 
-If you want CLI-first mode to work, make sure `gemini` CLI is installed and already logged in on the machine.
+Recommended policy is CLI/session-auth first. If you want CLI-first mode to work, make sure `gemini` CLI is installed and already logged in on the machine.
+
+For OpenAI without API keys, the intended path is Codex CLI with ChatGPT sign-in. Keep `OPENAI_CLI_ENABLED=false` until `codex` is installed and authenticated on the target machine.
+
+API-key provider paths should be treated as optional fallback only, not the default operating mode.
 
 #### 3. Run API
 ```bash
@@ -125,7 +132,7 @@ copy .env.example .env
 ```
 Then edit `.env` and put your Gemini API key.
 
-Default provider priority is CLI first, then API fallback. If you want that path on Windows, make sure Gemini CLI is installed and authenticated.
+Default provider priority is CLI first, then optional Codex CLI, then optional API fallback. If you want that path on Windows RDP, install and authenticate Gemini CLI first, then optionally install Codex CLI and sign in with ChatGPT before enabling `OPENAI_CLI_ENABLED=true`.
 
 #### 3. Run API
 ```powershell
@@ -170,6 +177,26 @@ curl -X POST http://127.0.0.1:8000/news/cache \
   -H 'Content-Type: application/json' \
   --data @data/sample_news_events.json
 ```
+
+### 4g. Test ops summary and control panel
+```bash
+curl http://127.0.0.1:8000/ops/summary
+```
+Then open:
+```text
+http://127.0.0.1:8000/ops
+```
+
+The control panel currently supports:
+- readiness and runtime summary
+- guardrail and provider status visibility
+- active profile selection
+- kill switch on/off
+
+Provider registry notes:
+- `gemini_cli` is the current primary non-API path
+- `openai_cli` is implemented as a Codex CLI adapter for Windows/headless-friendly setups
+- enable `openai_cli` only after `codex` is installed and authenticated with ChatGPT on the target machine
 
 ### 5. Test analyze with sample request
 ```bash
@@ -258,6 +285,9 @@ Additional outputs:
 
 Notes:
 - `run_adaptive_tuning.py` now prepares a candidate config file automatically and logs tuning history.
+- The ops control panel is intentionally bounded. It does not expose arbitrary `.env` editing.
+- The provider registry now includes an `openai_cli` adapter targeting Codex CLI with ChatGPT sign-in, intended for Windows RDP or other operator-managed environments.
+- Even with the adapter present, only enable `openai_cli` after the target machine has a verified Codex CLI login session.
 - `check_performance_checkpoint.py` gives a quick gate before you approve a candidate.
 - `check_rollback_trigger.py` gives a simple rollback signal scaffold if weak outcomes persist.
 - `approve_candidate_config.py` merges the candidate into `.env` and creates a timestamped backup first.

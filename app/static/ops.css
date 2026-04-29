@@ -1,0 +1,30 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #0b1020; color: #e8ecf3; }
+.topbar { padding: 20px 24px; background: #121933; border-bottom: 1px solid #253050; }
+.subtitle { margin: 4px 0 0; color: #9fb0d0; }
+.page { padding: 24px; }
+.grid { display: grid; gap: 20px; margin-bottom: 20px; }
+.grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.card { background: #141c31; border: 1px solid #273250; border-radius: 14px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+.card h2, .card h3 { margin-top: 0; }
+.kv div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid #202b45; }
+.kv div:last-child { border-bottom: none; }
+dt { color: #93a4c7; }
+dd { margin: 0; text-align: right; }
+.status { display: inline-block; padding: 8px 12px; border-radius: 999px; font-weight: bold; margin-bottom: 12px; }
+.status-ready { background: #123d24; color: #8bf0b2; }
+.status-caution { background: #4a3910; color: #ffd76a; }
+.status-danger { background: #4c1d24; color: #ff96a4; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: #223055; color: #dfe7fb; padding: 6px 10px; border-radius: 999px; font-size: 14px; }
+.muted { color: #91a0be; }
+ul { padding-left: 18px; }
+.flash { padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; }
+.flash-success { background: #123d24; color: #8bf0b2; border: 1px solid #245f3d; }
+.flash-error { background: #4c1d24; color: #ff9cad; border: 1px solid #70313a; }
+.action-form { margin-top: 16px; display: grid; gap: 10px; }
+.action-form label { color: #93a4c7; font-size: 14px; }
+.action-form select, .action-form input, .action-form button { border-radius: 10px; border: 1px solid #31415f; padding: 10px 12px; font: inherit; }
+.action-form select, .action-form input { background: #0f1628; color: #e8ecf3; }
+.action-form button { background: #2e63ff; color: white; cursor: pointer; border: none; font-weight: 600; }
+.action-form button:hover { background: #2554da; }

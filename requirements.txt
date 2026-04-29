@@ -8,5 +8,6 @@ orjson==3.11.2
 loguru==0.7.3
 pandas==2.3.2
 aiofiles==24.1.0
+python-multipart==0.0.20
 scikit-learn==1.7.1
 joblib==1.5.2
