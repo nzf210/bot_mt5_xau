@@ -21,7 +21,7 @@ async def analyze_with_gemini(market: MarketRequest) -> str:
     payload = {"contents": [{"parts": parts}]}
     url = f"{settings.gemini_base_url}/{settings.gemini_model}:generateContent?key={settings.gemini_api_key}"
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=settings.gemini_api_timeout_seconds) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
         data = response.json()

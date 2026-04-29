@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = "replace_me"
     gemini_model: str = "gemini-2.5-flash"
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/models"
+    gemini_provider_priority: str = "cli,api"
+    gemini_cli_enabled: bool = True
+    gemini_api_enabled: bool = True
+    gemini_cli_timeout_seconds: int = 25
+    gemini_api_timeout_seconds: int = 30
 
     min_confidence: int = 72
     min_risk_reward: float = 1.7

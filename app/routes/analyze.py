@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.config import get_settings
 from app.schemas import AnalyzeResponse, MarketRequest
 from app.services.decision_parser import build_wait_decision, parse_trade_decision, validate_trade_decision
-from app.services.gemini_client import analyze_with_gemini
+from app.services.gemini_provider import analyze_with_provider_fallback
 from app.services.logger_service import log_ai_decision, log_trade_event, log_analyze_request
 from app.services.risk_filter import apply_risk_filter
 from pydantic import BaseModel
@@ -24,8 +24,12 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
     raw_model_text = ""
     log_analyze_request(market)
     try:
-        raw_model_text = await (analyze_with_vision(market) if settings.enable_vision and market.chart_image_base64 else analyze_with_gemini(market))
-        phase = "D" if settings.enable_vision and market.chart_image_base64 else "A"
+        if settings.enable_vision and market.chart_image_base64:
+            raw_model_text = await analyze_with_vision(market)
+            phase = "D"
+        else:
+            raw_model_text, provider_used = await analyze_with_provider_fallback(market)
+            phase = f"A:{provider_used}"
     except Exception as exc:
         decision = build_wait_decision(f"gemini_request_failed:{type(exc).__name__}")
         log_ai_decision(market, raw_model_text, decision, phase)

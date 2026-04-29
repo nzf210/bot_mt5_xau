@@ -5,6 +5,7 @@ A phased trading bot scaffold built for MT5 execution, Python orchestration, and
 ## What is included
 - FastAPI service with `/analyze`, `/health`, `/review/daily`, `/review/symbol/{symbol}`, `/review/timeframe/{timeframe}`, `/trade-result`, `/profile/{mode}`, `/kill-switch`, and `/news/cache`
 - Structured market request and decision response schemas
+- Gemini provider orchestration with CLI-first fallback to API
 - Gemini client for text and optional vision flow
 - Decision parsing and schema validation
 - Risk filter with emergency stop, session checks, spread, confidence, RR, duplicate signal, daily trade caps, timestamp-based cooldown, max daily loss guard, and external news blackout checks
@@ -81,6 +82,15 @@ cp .env.example .env
 # edit .env and put your Gemini API key
 ```
 
+Provider priority defaults to Gemini CLI first, then API fallback:
+```env
+GEMINI_PROVIDER_PRIORITY=cli,api
+GEMINI_CLI_ENABLED=true
+GEMINI_API_ENABLED=true
+```
+
+If you want CLI-first mode to work, make sure `gemini` CLI is installed and already logged in on the machine.
+
 #### 3. Run API
 ```bash
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -114,6 +124,8 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 Then edit `.env` and put your Gemini API key.
+
+Default provider priority is CLI first, then API fallback. If you want that path on Windows, make sure Gemini CLI is installed and authenticated.
 
 #### 3. Run API
 ```powershell
