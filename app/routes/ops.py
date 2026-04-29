@@ -104,3 +104,29 @@ async def ops_apply_candidate_config(confirm: str = Form("")) -> RedirectRespons
     _run_script("scripts/compare_config_vs_recommendation.py")
     _run_script("scripts/build_approval_summary.py")
     return RedirectResponse(url="/ops?message=approval_apply_config_ok", status_code=303)
+
+
+@router.post("/ops/approval/rebuild-summary")
+async def ops_rebuild_approval_summary() -> RedirectResponse:
+    steps = [
+        "scripts/compare_config_vs_recommendation.py",
+        "scripts/build_approval_summary.py",
+    ]
+    outputs = []
+    for script in steps:
+        ok, out = _run_script(script)
+        outputs.append(out)
+        if not ok:
+            return RedirectResponse(url=f"/ops?error=approval_rebuild_summary_failed:{'|'.join(outputs)}", status_code=303)
+    return RedirectResponse(url="/ops?message=approval_rebuild_summary_ok", status_code=303)
+
+
+@router.post("/ops/learning/run-cycle")
+async def ops_run_learning_cycle_manual(confirm: str = Form("")) -> RedirectResponse:
+    if confirm.strip().lower() != "run":
+        return RedirectResponse(url="/ops?error=learning_run_cycle_requires_confirm_run", status_code=303)
+    ok, out = _run_script("scripts/run_learning_cycle.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=learning_run_cycle_failed:{out}", status_code=303)
+    _run_script("scripts/build_approval_summary.py")
+    return RedirectResponse(url="/ops?message=learning_run_cycle_ok", status_code=303)

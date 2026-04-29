@@ -189,6 +189,9 @@
     <form method="post" action="/ops/approval/backup-model" class="action-form">
       <button type="submit">Backup Current Model</button>
     </form>
+    <form method="post" action="/ops/approval/rebuild-summary" class="action-form">
+      <button type="submit">Rebuild Approval Summary</button>
+    </form>
     <form method="post" action="/ops/approval/apply-config" class="action-form">
       <label for="confirm_apply">Type apply to confirm</label>
       <input id="confirm_apply" name="confirm" type="text" placeholder="apply" />
@@ -240,6 +243,11 @@
       <li class="muted">No learning cycle runs yet</li>
       {% endfor %}
     </ul>
+    <form method="post" action="/ops/learning/run-cycle" class="action-form">
+      <label for="confirm_run">Type run to confirm</label>
+      <input id="confirm_run" name="confirm" type="text" placeholder="run" />
+      <button type="submit">Run Learning Cycle Now</button>
+    </form>
   </section>
 
   <section class="card">
