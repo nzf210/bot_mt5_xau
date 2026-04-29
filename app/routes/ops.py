@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -17,15 +18,18 @@ router = APIRouter()
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _run_script(script_rel: str) -> tuple[bool, str]:
+def _run_script(script_rel: str, script_args: list[str] | None = None) -> tuple[bool, str]:
     script_path = ROOT / script_rel
+    cmd = [sys.executable, str(script_path)] + (script_args or [])
     proc = subprocess.run(
-        [sys.executable, str(script_path)],
+        cmd,
         cwd=str(ROOT),
         capture_output=True,
         text=True,
     )
-    output = (proc.stdout or proc.stderr or "").strip().replace("\n", " | ")[:300]
+    output = (proc.stdout or proc.stderr or "").strip().replace("\n", " | ")[:500]
+    if not output:
+        output = f"exit={proc.returncode} cmd={' '.join(shlex.quote(part) for part in cmd)}"
     return proc.returncode == 0, output
 
 
@@ -147,7 +151,7 @@ async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: s
 
 @router.post("/ops/llm-review/run-now")
 async def ops_run_llm_review_now() -> RedirectResponse:
-    ok, out = _run_script("scripts/run_llm_periodic_review.py --force")
+    ok, out = _run_script("scripts/run_llm_periodic_review.py", ["--force"])
     if not ok:
         return RedirectResponse(url=f"/ops?error=llm_review_run_failed:{out}", status_code=303)
     return RedirectResponse(url="/ops?message=llm_review_run_ok", status_code=303)
