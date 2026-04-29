@@ -9,8 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.schemas import Candle, Indicators, MarketRequest, NewsContext, PositionContext, SupportResistance, TrendContext
-from app.services.gemini_provider import analyze_with_provider_fallback
+from app.services.llm_review_client import run_periodic_llm_review
 from app.services.llm_review_settings_service import llm_review_due, load_llm_review_settings, mark_llm_review_run
 
 EXPORTS = ROOT / "data" / "exports"
@@ -26,28 +25,22 @@ def read_json(path: Path, default):
         return default
 
 
-def _build_review_market(summary_lines: list[str]) -> MarketRequest:
-    text = " | ".join(summary_lines)[:500]
-    return MarketRequest(
-        symbol="REVIEW",
-        timeframe="H3",
-        higher_timeframe="D1",
-        session="Review",
-        bid=0.0,
-        ask=0.0,
-        spread=0.0,
-        ohlc=[
-            Candle(t="review-1", o=0.0, h=0.0, l=0.0, c=0.0),
-            Candle(t="review-2", o=0.0, h=0.0, l=0.0, c=0.0),
-            Candle(t="review-3", o=0.0, h=0.0, l=0.0, c=0.0),
-        ],
-        indicators=Indicators(ema20=0.0, ema50=0.0, rsi14=50.0, macd_main=0.0, macd_signal=0.0, atr14=0.0),
-        support_resistance=SupportResistance(support_1=0.0, support_2=0.0, resistance_1=0.0, resistance_2=0.0),
-        trend_context=TrendContext(htf_trend="neutral", market_structure=text, momentum="review"),
-        position_context=PositionContext(open_positions=0, has_buy_position=False, has_sell_position=False),
-        news_context=NewsContext(mt5_news_available=False, mt5_blackout_active=False, mt5_reason=""),
-        mode="dry_run",
-    )
+def _build_review_payload(summary_lines: list[str], readiness: dict, adaptive: dict, approval: dict) -> dict:
+    return {
+        "summary_lines": summary_lines,
+        "dataset_readiness": readiness,
+        "adaptive_report_excerpt": {
+            "best_pair_sessions": adaptive.get("best_pair_sessions", []),
+            "worst_pair_sessions": adaptive.get("worst_pair_sessions", []),
+            "recommended_config_values": adaptive.get("recommended_config_values", {}),
+        },
+        "approval_summary": {
+            "readiness_level": approval.get("readiness_level"),
+            "approval_notes": approval.get("approval_notes", []),
+            "promotion_recommended": approval.get("promotion_recommended"),
+            "rollback_recommended": approval.get("rollback_recommended"),
+        },
+    }
 
 
 async def _run_review() -> dict:
@@ -84,11 +77,11 @@ async def _run_review() -> dict:
     llm_result = None
     llm_error = None
     try:
-        review_market = _build_review_market(summary_lines)
-        llm_text, provider_used = await analyze_with_provider_fallback(review_market)
+        review_payload = _build_review_payload(summary_lines, readiness, adaptive, approval)
+        llm_json = await run_periodic_llm_review(review_payload)
         llm_result = {
-            "provider": provider_used,
-            "raw_text": llm_text[:4000],
+            "provider": "openai_cli",
+            "review": llm_json,
         }
     except Exception as exc:
         llm_error = str(exc)
