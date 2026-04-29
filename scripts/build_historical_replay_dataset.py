@@ -51,8 +51,36 @@ def _read_csv_flexible(csv_path: Path) -> pd.DataFrame:
     return pd.read_csv(csv_path)
 
 
+def _split_single_column_mt5(df: pd.DataFrame) -> pd.DataFrame:
+    if len(df.columns) != 1:
+        return df
+    col = str(df.columns[0])
+    if "<DATE>" not in col and "\t" not in col and " " not in col:
+        return df
+
+    rows = [col]
+    rows.extend(df.iloc[:, 0].dropna().astype(str).tolist())
+    split_rows = [row.strip().split() for row in rows if str(row).strip()]
+    if len(split_rows) < 2:
+        return df
+
+    width = len(split_rows[0])
+    if width < 5:
+        return df
+
+    normalized = []
+    for parts in split_rows:
+        if len(parts) >= width:
+            normalized.append(parts[:width])
+    if len(normalized) < 2:
+        return df
+
+    return pd.DataFrame(normalized[1:], columns=normalized[0])
+
+
 def load_bars(csv_path: Path) -> pd.DataFrame:
     df = _read_csv_flexible(csv_path)
+    df = _split_single_column_mt5(df)
     raw_cols = list(df.columns)
     normalized_cols = {str(c).strip().lower().replace(" ", "_"): c for c in raw_cols}
 
