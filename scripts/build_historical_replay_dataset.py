@@ -35,6 +35,7 @@ def _read_csv_flexible(csv_path: Path) -> pd.DataFrame:
         {"sep": ","},
         {"sep": ";"},
         {"sep": "\t"},
+        {"sep": r"\s+", "engine": "python"},
         {"sep": None, "engine": "python"},
     ]
     last_error = None
