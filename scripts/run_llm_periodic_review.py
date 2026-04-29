@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 import sys
@@ -43,11 +44,11 @@ def _build_review_payload(summary_lines: list[str], readiness: dict, adaptive: d
     }
 
 
-async def _run_review() -> dict:
+async def _run_review(force: bool = False) -> dict:
     EXPORTS.mkdir(parents=True, exist_ok=True)
     settings = load_llm_review_settings()
 
-    if not llm_review_due(settings):
+    if not force and not llm_review_due(settings):
         payload = {
             "ok": True,
             "skipped": True,
@@ -105,7 +106,10 @@ async def _run_review() -> dict:
 
 
 def main() -> None:
-    payload = asyncio.run(_run_review())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true")
+    args = parser.parse_args()
+    payload = asyncio.run(_run_review(force=args.force))
     print(json.dumps(payload, indent=2, ensure_ascii=False))
 
 

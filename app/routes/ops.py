@@ -147,7 +147,7 @@ async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: s
 
 @router.post("/ops/llm-review/run-now")
 async def ops_run_llm_review_now() -> RedirectResponse:
-    ok, out = _run_script("scripts/run_llm_periodic_review.py")
+    ok, out = _run_script("scripts/run_llm_periodic_review.py --force")
     if not ok:
         return RedirectResponse(url=f"/ops?error=llm_review_run_failed:{out}", status_code=303)
     return RedirectResponse(url="/ops?message=llm_review_run_ok", status_code=303)
