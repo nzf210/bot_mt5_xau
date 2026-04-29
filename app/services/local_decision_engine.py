@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.models.trade_decision import TradeDecision
 from app.schemas import MarketRequest
+from app.services.model_service import score_market_with_model
 
 
 def _rr(entry: float, stop_loss: float, take_profit: float) -> float:
@@ -51,17 +52,23 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         warnings.append("ATR unavailable or invalid")
     if spread <= 0:
         warnings.append("Spread invalid")
+    if atr14 > 0 and spread > atr14 * 8:
+        return _build_wait("Spread too high relative to current volatility", warnings + ["Spread/ATR ratio too high"])
 
     support_1 = float(market.support_resistance.support_1)
     resistance_1 = float(market.support_resistance.resistance_1)
+    support_2 = float(market.support_resistance.support_2)
+    resistance_2 = float(market.support_resistance.resistance_2)
 
     if bullish_trend and bullish_momentum and close_price > support_1:
         entry = float(market.ask)
         stop_loss = min(support_1, close_price - atr14)
-        take_profit = max(resistance_1, close_price + (atr14 * 1.5))
+        take_profit = max(resistance_1, close_price + (atr14 * 2.0))
         rr = _rr(entry, stop_loss, take_profit)
-        confidence = 78 if rr >= 1.5 else 70
-        return TradeDecision(
+        if rr < 1.2:
+            return _build_wait("Bullish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
+        confidence = 82 if rr >= 1.7 else 74
+        td = TradeDecision(
             decision="BUY",
             confidence=confidence,
             entry=round(entry, 5),
@@ -72,14 +79,20 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
             warnings=warnings,
             source="local",
         )
+        model_check = score_market_with_model(market, td)
+        if model_check.get("model_loaded") and not model_check.get("allow", True):
+            return _build_wait("Bullish setup rejected by local model score", warnings + [str(model_check.get("reason"))])
+        return td
 
     if bearish_trend and bearish_momentum and close_price < resistance_1:
         entry = float(market.bid)
         stop_loss = max(resistance_1, close_price + atr14)
-        take_profit = min(support_1, close_price - (atr14 * 1.5))
+        take_profit = min(support_1, close_price - (atr14 * 2.0), support_2 if support_2 > 0 else close_price - (atr14 * 2.0))
         rr = _rr(entry, stop_loss, take_profit)
-        confidence = 78 if rr >= 1.5 else 70
-        return TradeDecision(
+        if rr < 1.2:
+            return _build_wait("Bearish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
+        confidence = 82 if rr >= 1.7 else 74
+        td = TradeDecision(
             decision="SELL",
             confidence=confidence,
             entry=round(entry, 5),
@@ -90,6 +103,13 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
             warnings=warnings,
             source="local",
         )
+        model_check = score_market_with_model(market, td)
+        if model_check.get("model_loaded") and not model_check.get("allow", True):
+            return _build_wait("Bearish setup rejected by local model score", warnings + [str(model_check.get("reason"))])
+        return td
+
+    if close_price >= resistance_2 or close_price <= support_2:
+        warnings.append("Price is extended near outer support/resistance")
 
     return _build_wait(
         "Local setup is weak, conflicting, or incomplete",
