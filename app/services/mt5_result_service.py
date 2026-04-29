@@ -7,6 +7,7 @@ class TradeResultIngest(BaseModel):
     symbol: str
     timeframe: str
     mode: str
+    decision_id: str = ""
     decision: str
     position_ticket: str
     entry_price: float
@@ -23,6 +24,7 @@ def ingest_trade_result(payload: TradeResultIngest) -> dict:
         symbol=payload.symbol,
         timeframe=payload.timeframe,
         mode=payload.mode,
+        decision_id=payload.decision_id,
         decision=payload.decision,
         position_ticket=payload.position_ticket,
         entry_price=payload.entry_price,

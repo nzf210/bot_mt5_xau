@@ -5,6 +5,7 @@ from app.schemas import MarketRequest
 from app.services.kill_switch_service import get_kill_switch
 from app.services.model_service import score_market_with_model
 from app.services.news_service import has_external_news_blackout
+from app.services.pair_session_policy_service import resolve_pair_session_policy
 from app.services.profile_service import get_profile_settings
 from app.services.result_store import sum_pnl_for_day
 from app.services.state_store import count_trades_today, get_last_passed_signal_ts, is_duplicate_signal, record_signal_event
@@ -25,7 +26,10 @@ def _cooldown_active(symbol: str, timeframe: str, cooldown_minutes: int) -> bool
 
 def apply_risk_filter(td: TradeDecision, market: MarketRequest) -> TradeDecision:
     settings = get_settings()
-    profile = get_profile_settings(market.mode)
+    base_profile = get_profile_settings(market.mode)
+    resolved_policy = resolve_pair_session_policy(market.symbol, market.session, base_profile)
+    profile = resolved_policy["profile"]
+    allowed_sessions = resolved_policy["allowed_sessions"]
     kill_switch = get_kill_switch()
 
     if kill_switch.get("active"):
@@ -56,7 +60,7 @@ def apply_risk_filter(td: TradeDecision, market: MarketRequest) -> TradeDecision
         record_signal_event(market.symbol, market.timeframe, td.decision, td.filter_reason, td.passed_filter)
         return td
 
-    model_check = score_market_with_model(market)
+    model_check = score_market_with_model(market, td)
     if not model_check.get("allow", True):
         td.passed_filter = False
         td.filter_reason = model_check.get("reason", "model_score_blocked")
@@ -83,7 +87,7 @@ def apply_risk_filter(td: TradeDecision, market: MarketRequest) -> TradeDecision
         td.filter_reason = "max_open_positions_reached"
         return td
 
-    if market.session not in settings.allowed_sessions:
+    if market.session not in allowed_sessions:
         td.passed_filter = False
         td.filter_reason = "session_not_allowed"
         return td

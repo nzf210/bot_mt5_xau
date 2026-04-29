@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class TradeDecision(BaseModel):
+    decision_id: str = ""
     decision: str = Field(default="WAIT")
     confidence: int = Field(default=0, ge=0, le=100)
     entry: float = 0.0

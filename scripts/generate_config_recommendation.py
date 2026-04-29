@@ -26,6 +26,7 @@ def main() -> None:
         f"MODEL_SCORE_THRESHOLD={tuned_threshold}",
         f"DEFAULT_SESSION_ALLOWLIST={','.join(cfg.get('recommended_allowed_sessions', []))}",
         f"DISABLED_SYMBOLS={','.join(cfg.get('recommended_disabled_symbols', []))}",
+        f"SYMBOL_SESSION_POLICY_JSON={json.dumps(cfg.get('recommended_symbol_session_policy', {}), separators=(',', ':'))}",
     ]
     OUTPUT_ENV.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Wrote recommended config to {OUTPUT_ENV}")

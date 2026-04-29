@@ -8,6 +8,15 @@ TRADE_CSV = ROOT / "data" / "training" / "trade_outcome_dataset.csv"
 OUTPUT_JSON = ROOT / "data" / "exports" / "adaptive_report.json"
 
 
+def safe_read_csv(path: Path) -> pd.DataFrame:
+    if not path.exists() or path.stat().st_size == 0:
+        return pd.DataFrame([])
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame([])
+
+
 def safe_group_summary(df: pd.DataFrame, group_col: str, pnl_col: str = "pnl") -> list[dict]:
     if df.empty or group_col not in df.columns or pnl_col not in df.columns:
         return []
@@ -106,6 +115,29 @@ def session_pnl_analysis(trade_df: pd.DataFrame) -> list[dict]:
     return grouped.to_dict(orient="records")
 
 
+def pair_session_analysis(trade_df: pd.DataFrame) -> list[dict]:
+    required = {"symbol", "session", "result", "pnl"}
+    if trade_df.empty or not required.issubset(set(trade_df.columns)):
+        return []
+
+    rows = []
+    for (symbol, session), g in trade_df.groupby(["symbol", "session"]):
+        total = int(len(g))
+        wins = int((g["result"] == "win").sum())
+        rows.append({
+            "symbol": symbol,
+            "session": session,
+            "trade_count": total,
+            "wins": wins,
+            "win_rate": round((wins / total) * 100.0, 2) if total > 0 else 0.0,
+            "pnl_total": round(float(g["pnl"].sum()), 2),
+            "pnl_avg": round(float(g["pnl"].mean()), 2) if total > 0 else 0.0,
+        })
+
+    rows.sort(key=lambda x: (x["pnl_total"], x["win_rate"], x["trade_count"]), reverse=True)
+    return rows
+
+
 def symbol_winrate_analysis(trade_df: pd.DataFrame) -> list[dict]:
     if trade_df.empty or "symbol" not in trade_df.columns or "result" not in trade_df.columns or "pnl" not in trade_df.columns:
         return []
@@ -195,11 +227,30 @@ def recommend_allowed_sessions(session_rows: list[dict]) -> list[str]:
     return allowed
 
 
+def recommend_symbol_session_policy(pair_session_rows: list[dict]) -> dict:
+    policy = {}
+    for row in pair_session_rows:
+        symbol = row.get("symbol")
+        session = row.get("session")
+        if not symbol or not session:
+            continue
+        if row.get("trade_count", 0) < 2:
+            continue
+        if row.get("pnl_total", 0) <= 0:
+            continue
+        policy.setdefault(symbol, []).append(session)
+
+    for symbol in list(policy.keys()):
+        policy[symbol] = sorted(set(policy[symbol]))
+    return policy
+
+
 def build_recommendations(decision_df: pd.DataFrame, trade_df: pd.DataFrame) -> tuple[list[str], dict]:
     recs = []
     symbol_rows = symbol_winrate_analysis(trade_df)
     timeframe_rows = timeframe_winrate_analysis(trade_df)
     session_rows = session_pnl_analysis(trade_df)
+    pair_session_rows = pair_session_analysis(trade_df)
     conf = confidence_analysis(decision_df, trade_df)
     rr = rr_analysis(decision_df, trade_df)
     top_filters = top_filter_reasons(decision_df)
@@ -208,6 +259,7 @@ def build_recommendations(decision_df: pd.DataFrame, trade_df: pd.DataFrame) -> 
     rr_threshold = recommend_rr_threshold(rr)
     disabled_symbols = recommend_disabled_symbols(symbol_rows)
     allowed_sessions = recommend_allowed_sessions(session_rows)
+    symbol_session_policy = recommend_symbol_session_policy(pair_session_rows)
 
     if symbol_rows:
         recs.append(f"Best symbol by pnl: {symbol_rows[0]['symbol']} ({symbol_rows[0]['pnl_total']})")
@@ -225,12 +277,18 @@ def build_recommendations(decision_df: pd.DataFrame, trade_df: pd.DataFrame) -> 
         recs.append(f"Recommended session allowlist: {', '.join(allowed_sessions)}")
     if top_filters:
         recs.append(f"Most frequent filter reason: {top_filters[0]['filter_reason']} ({top_filters[0]['count']}x)")
+    if pair_session_rows:
+        best_pair_session = pair_session_rows[0]
+        recs.append(
+            f"Best pair-session by pnl: {best_pair_session['symbol']} @ {best_pair_session['session']} ({best_pair_session['pnl_total']})"
+        )
 
     machine = {
         "recommended_min_confidence": conf_threshold,
         "recommended_min_risk_reward": rr_threshold,
         "recommended_disabled_symbols": disabled_symbols,
         "recommended_allowed_sessions": allowed_sessions,
+        "recommended_symbol_session_policy": symbol_session_policy,
     }
     return recs, machine
 
@@ -254,13 +312,14 @@ def enrich_trade_dataset(trade_df: pd.DataFrame, decision_df: pd.DataFrame) -> p
 
 def main() -> None:
     OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    decision_df = pd.read_csv(DECISION_CSV) if DECISION_CSV.exists() else pd.DataFrame([])
-    trade_df = pd.read_csv(TRADE_CSV) if TRADE_CSV.exists() else pd.DataFrame([])
+    decision_df = safe_read_csv(DECISION_CSV)
+    trade_df = safe_read_csv(TRADE_CSV)
     trade_df = enrich_trade_dataset(trade_df, decision_df)
 
     symbol_rows = symbol_winrate_analysis(trade_df)
     timeframe_rows = timeframe_winrate_analysis(trade_df)
     session_rows = session_pnl_analysis(trade_df)
+    pair_session_rows = pair_session_analysis(trade_df)
     conf = confidence_analysis(decision_df, trade_df)
     rr = rr_analysis(decision_df, trade_df)
     filter_rows = top_filter_reasons(decision_df)
@@ -271,6 +330,9 @@ def main() -> None:
         "worst_symbols": list(reversed(symbol_rows[-5:] if symbol_rows else [])),
         "best_timeframes": timeframe_rows[:5],
         "session_analysis": session_rows,
+        "pair_session_analysis": pair_session_rows,
+        "best_pair_sessions": pair_session_rows[:10],
+        "worst_pair_sessions": list(reversed(pair_session_rows[-10:] if pair_session_rows else [])),
         "confidence_analysis": conf,
         "risk_reward_analysis": rr,
         "top_filter_reasons": filter_rows,

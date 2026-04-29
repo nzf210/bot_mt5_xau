@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     enable_vision: bool = False
     emergency_stop: bool = True
     default_session_allowlist: str = "London,NewYork,Overlap"
+    symbol_session_policy_json: str = "{}"
 
     decision_log_path: str = "logs/ai_decisions.jsonl"
     event_log_path: str = "logs/trade_events.jsonl"

@@ -110,6 +110,98 @@
 
 <div class="grid two">
   <section class="card">
+    <h2>Pair-Session Policy</h2>
+    <p>
+      Configured:
+      <strong>{{ summary.pair_session_policy.configured }}</strong>
+    </p>
+    <ul>
+      {% for symbol, cfg in summary.pair_session_policy.policy.items() %}
+      <li>
+        <strong>{{ symbol }}</strong>
+        {% if cfg.allowed_sessions %}
+        , allowed={{ cfg.allowed_sessions | join(', ') }}
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="muted">No pair-session policy configured</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Adaptive Pair-Session Insight</h2>
+    <p>
+      Adaptive report available:
+      <strong>{{ summary.reviews.adaptive.available }}</strong>
+    </p>
+    <h3>Best Pair-Sessions</h3>
+    <ul>
+      {% for row in summary.reviews.adaptive.best_pair_sessions[:5] %}
+      <li>{{ row.symbol }} @ {{ row.session }} , pnl={{ row.pnl_total }} , win_rate={{ row.win_rate }}%</li>
+      {% else %}
+      <li class="muted">No pair-session analytics yet</li>
+      {% endfor %}
+    </ul>
+    <h3>Recommended Policy</h3>
+    <ul>
+      {% for symbol, sessions in summary.reviews.adaptive.recommended_symbol_session_policy.items() %}
+      <li>{{ symbol }} -> {{ sessions | join(', ') }}</li>
+      {% else %}
+      <li class="muted">No recommended symbol-session policy yet</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Learning Cycle</h2>
+    <dl class="kv">
+      <div><dt>Available</dt><dd>{{ summary.learning_cycle.available }}</dd></div>
+      <div><dt>Last Start</dt><dd>{{ summary.learning_cycle.started_at or '-' }}</dd></div>
+      <div><dt>Last Finish</dt><dd>{{ summary.learning_cycle.finished_at or '-' }}</dd></div>
+      <div><dt>Cycle OK</dt><dd>{{ summary.learning_cycle.ok }}</dd></div>
+      <div><dt>Readiness</dt><dd>{{ summary.learning_cycle.readiness_level or '-' }}</dd></div>
+      <div><dt>Allow Training</dt><dd>{{ summary.learning_cycle.allow_training }}</dd></div>
+      <div><dt>Promotion Recommended</dt><dd>{{ summary.learning_cycle.promotion_recommended }}</dd></div>
+      <div><dt>Rollback Recommended</dt><dd>{{ summary.learning_cycle.rollback_recommended }}</dd></div>
+    </dl>
+    <h3>Dataset Readiness Metrics</h3>
+    <ul>
+      {% for key, value in summary.learning_cycle.readiness_report.metrics.items() %}
+      <li>{{ key }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No readiness metrics yet</li>
+      {% endfor %}
+    </ul>
+    <h3>Dataset Readiness Notes</h3>
+    <ul>
+      {% for note in summary.learning_cycle.readiness_report.notes %}
+      <li>{{ note }}</li>
+      {% else %}
+      <li class="muted">No readiness notes</li>
+      {% endfor %}
+    </ul>
+    <h3>Steps</h3>
+    <ul>
+      {% for step in summary.learning_cycle.steps %}
+      <li>
+        <strong>{{ step.name }}</strong>
+        {% if step.skipped %}
+        , skipped , {{ step.reason }}
+        {% else %}
+        , ok={{ step.ok }}
+        {% if step.returncode is defined %}, rc={{ step.returncode }}{% endif %}
+        {% endif %}
+      </li>
+      {% else %}
+      <li class="muted">No learning cycle runs yet</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
     <h2>Trade Summary</h2>
     <dl class="kv">
       <div><dt>Trades Today</dt><dd>{{ summary.runtime.trade_results_today }}</dd></div>

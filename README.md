@@ -192,6 +192,13 @@ The control panel currently supports:
 - guardrail and provider status visibility
 - active profile selection
 - kill switch on/off
+- pair-session policy and adaptive pair-session visibility
+- learning cycle visibility, including readiness, training gate, rollback signal, and step status
+
+Pair-session guardrail notes:
+- global session allowlist still works as default baseline
+- `SYMBOL_SESSION_POLICY_JSON` can override allowed sessions per symbol
+- `SYMBOL_SESSION_POLICY_JSON` can also override thresholds per symbol + session
 
 Provider registry notes:
 - `gemini_cli` is the current primary non-API path
@@ -225,13 +232,21 @@ After you have some logs/results, you can export datasets and generate a first a
 ```bash
 python scripts/build_decision_dataset.py
 python scripts/build_trade_dataset.py
+python scripts/check_dataset_readiness.py
 python scripts/run_adaptive_analytics.py
 ```
 
 Outputs:
 - `data/training/decision_dataset.csv`
 - `data/training/trade_outcome_dataset.csv`
+- `data/exports/dataset_readiness.json`
 - `data/exports/adaptive_report.json`
+- adaptive report now also includes `pair_session_analysis`, `best_pair_sessions`, and `worst_pair_sessions`
+
+Before training seriously, review the dataset threshold gate:
+
+- `DATASET_THRESHOLD_PLAN.md`
+- `data/exports/dataset_readiness.json`
 
 To push one level further and get a ready-to-review recommendation package:
 
@@ -265,6 +280,22 @@ Model paths:
 - `models/candidates/candidate_model_meta.json`
 - `models/reports/model_evaluation.json`
 - `models/reports/model_threshold_tuning.json`
+
+Scheduled learning foundation:
+```bash
+python scripts/run_learning_cycle.py
+```
+
+Learning runner outputs:
+- `data/learning/learning_cycle_status.json`
+- `data/learning/learning_cycle_history.jsonl`
+
+Related docs:
+- `AUTONOMY_ROADMAP.md`
+- `LEARNING_LOOP_BACKLOG.md`
+- `AUTO_LEARNING_ENABLEMENT_RUNBOOK.md`
+- `WINDOWS_LEARNING_SCHEDULER.md`
+- `RDP_MIGRATION_CHECKLIST.md`
 - `models/reports/model_evaluation_history.jsonl`
 - `models/reports/model_history_summary.json`
 

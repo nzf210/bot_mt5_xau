@@ -13,6 +13,7 @@ SELECT
   symbol,
   timeframe,
   mode,
+  decision_id,
   decision,
   entry_price,
   close_price,
@@ -51,6 +52,16 @@ def enrich_with_decision_data(trade_df: pd.DataFrame) -> pd.DataFrame:
     decision_df = pd.read_csv(DECISION_CSV)
     if decision_df.empty:
         return trade_df
+
+    enrich_cols = ["decision_id"] + [c for c in DECISION_ENRICH_COLS if c in decision_df.columns]
+
+    if "decision_id" in trade_df.columns and "decision_id" in decision_df.columns:
+        decision_by_id = decision_df[[c for c in enrich_cols if c in decision_df.columns]].copy()
+        decision_by_id = decision_by_id[decision_by_id["decision_id"].fillna("") != ""]
+        if not decision_by_id.empty:
+            decision_by_id = decision_by_id.drop_duplicates(subset=["decision_id"], keep="last")
+            merged = trade_df.merge(decision_by_id, on=["decision_id"], how="left")
+            return merged
 
     available_cols = [c for c in DECISION_ENRICH_COLS if c in decision_df.columns]
     if "symbol" not in available_cols or "timeframe" not in available_cols:

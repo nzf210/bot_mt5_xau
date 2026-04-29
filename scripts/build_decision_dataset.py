@@ -18,6 +18,7 @@ def flatten_row(row: dict) -> dict:
 
     return {
         "timestamp": row.get("time", ""),
+        "decision_id": decision.get("decision_id", ""),
         "symbol": row.get("symbol", market.get("symbol", "")),
         "timeframe": row.get("timeframe", market.get("timeframe", "")),
         "higher_timeframe": market.get("higher_timeframe", ""),

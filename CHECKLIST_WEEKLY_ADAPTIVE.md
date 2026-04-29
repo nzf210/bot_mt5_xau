@@ -1,5 +1,9 @@
 # Weekly Adaptive Tuning Checklist
 
+- [ ] Run `python scripts/check_dataset_readiness.py`
+- [ ] Confirm dataset level is at least `analytics_ready` before trusting adaptive insights
+- [ ] Confirm dataset level is at least `training_ready` before training candidate model
+- [ ] Confirm dataset level is at least `promotion_ready` before promoting model/config
 - [ ] Minimum trade sample is sufficient
 - [ ] Run `python scripts/run_adaptive_tuning.py`
 - [ ] Review `adaptive_report.json`

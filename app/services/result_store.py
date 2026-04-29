@@ -14,6 +14,7 @@ def init_result_store() -> None:
                 symbol TEXT NOT NULL,
                 timeframe TEXT NOT NULL,
                 mode TEXT NOT NULL,
+                decision_id TEXT NOT NULL DEFAULT '',
                 decision TEXT NOT NULL,
                 position_ticket TEXT NOT NULL,
                 entry_price REAL NOT NULL,
@@ -29,14 +30,21 @@ def init_result_store() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_trade_results_day_symbol ON trade_results(day, symbol)"
         )
+        try:
+            conn.execute("ALTER TABLE trade_results ADD COLUMN decision_id TEXT NOT NULL DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_trade_results_decision_id ON trade_results(decision_id)"
+        )
         conn.commit()
 
 
-def record_trade_result(symbol: str, timeframe: str, mode: str, decision: str, position_ticket: str, entry_price: float, close_price: float, stop_loss: float, take_profit: float, pnl: float, result: str, notes: str = "") -> None:
+def record_trade_result(symbol: str, timeframe: str, mode: str, decision_id: str, decision: str, position_ticket: str, entry_price: float, close_price: float, stop_loss: float, take_profit: float, pnl: float, result: str, notes: str = "") -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO trade_results(ts, day, symbol, timeframe, mode, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (utc_now_iso(), utc_date(), symbol, timeframe, mode, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes),
+            "INSERT INTO trade_results(ts, day, symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (utc_now_iso(), utc_date(), symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes),
         )
         conn.commit()
 

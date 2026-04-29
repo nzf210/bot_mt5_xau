@@ -26,6 +26,7 @@ Python returns:
   "ok": true,
   "phase": "A|C|D|E",
   "decision": {
+    "decision_id": "uuid-string",
     "decision": "BUY|SELL|WAIT",
     "confidence": 0,
     "entry": 0,
@@ -41,6 +42,9 @@ Python returns:
   "raw_model_text": ""
 }
 ```
+
+## Trade result ingest
+When MT5 reports trade results back to Python, it should include the same `decision_id` received from `/analyze` whenever available. This is used to link a closed or opened trade back to the exact originating AI decision for cleaner dataset building and model training.
 
 ## Execution rule in MT5
 Only consider execution when all are true:

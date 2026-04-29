@@ -3,6 +3,7 @@ import json
 import joblib
 import pandas as pd
 from app.config import get_settings
+from app.models.trade_decision import TradeDecision
 from app.schemas import MarketRequest
 
 
@@ -19,23 +20,18 @@ def load_current_model() -> tuple[object | None, dict | None]:
     return model, meta
 
 
-def score_market_with_model(market: MarketRequest) -> dict:
-    settings = get_settings()
-    model, meta = load_current_model()
-    if not model or not meta:
-        return {"model_loaded": False, "score": None, "allow": True, "reason": "no_model_loaded"}
-
-    row = {
-        "confidence": 0,
-        "risk_reward": 0,
+def build_model_feature_row(market: MarketRequest, decision: TradeDecision) -> dict:
+    return {
+        "confidence": int(decision.confidence),
+        "risk_reward": float(decision.risk_reward),
         "spread": float(market.spread),
-        "entry_price": 0,
-        "stop_loss": 0,
-        "take_profit": 0,
+        "entry_price": float(decision.entry),
+        "stop_loss": float(decision.stop_loss),
+        "take_profit": float(decision.take_profit),
         "symbol": market.symbol,
         "timeframe": market.timeframe,
         "session": market.session,
-        "decision": "UNKNOWN",
+        "decision": decision.decision,
         "mode": market.mode,
         "ema20": float(market.indicators.ema20) if getattr(market, 'indicators', None) else 0,
         "ema50": float(market.indicators.ema50) if getattr(market, 'indicators', None) else 0,
@@ -47,6 +43,15 @@ def score_market_with_model(market: MarketRequest) -> dict:
         "market_structure": market.trend_context.market_structure if getattr(market, 'trend_context', None) else "",
         "momentum": market.trend_context.momentum if getattr(market, 'trend_context', None) else "",
     }
+
+
+def score_market_with_model(market: MarketRequest, decision: TradeDecision) -> dict:
+    settings = get_settings()
+    model, meta = load_current_model()
+    if not model or not meta:
+        return {"model_loaded": False, "score": None, "allow": True, "reason": "no_model_loaded"}
+
+    row = build_model_feature_row(market, decision)
     feature_cols = meta.get("numeric_features", []) + meta.get("categorical_features", [])
     X = pd.DataFrame([{k: row.get(k) for k in feature_cols}])
 

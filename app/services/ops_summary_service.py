@@ -123,6 +123,95 @@ def _build_readiness(review: dict, kill_switch: dict, mode: str) -> dict:
     }
 
 
+def _load_adaptive_report_summary() -> dict:
+    report_path = Path("data/exports/adaptive_report.json")
+    if not report_path.exists():
+        return {
+            "available": False,
+            "best_pair_sessions": [],
+            "worst_pair_sessions": [],
+            "recommended_symbol_session_policy": {},
+        }
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {
+            "available": False,
+            "best_pair_sessions": [],
+            "worst_pair_sessions": [],
+            "recommended_symbol_session_policy": {},
+        }
+
+    cfg = report.get("recommended_config_values", {})
+    return {
+        "available": True,
+        "best_pair_sessions": report.get("best_pair_sessions", []),
+        "worst_pair_sessions": report.get("worst_pair_sessions", []),
+        "recommended_symbol_session_policy": cfg.get("recommended_symbol_session_policy", {}),
+    }
+
+
+def _load_pair_session_policy_summary() -> dict:
+    settings = get_settings()
+    raw = settings.symbol_session_policy_json.strip() or "{}"
+    try:
+        policy = json.loads(raw)
+    except json.JSONDecodeError:
+        return {
+            "configured": False,
+            "policy": {},
+        }
+    if not isinstance(policy, dict):
+        return {
+            "configured": False,
+            "policy": {},
+        }
+    return {
+        "configured": bool(policy),
+        "policy": policy,
+    }
+
+
+def _empty_learning_cycle_summary() -> dict:
+    return {
+        "available": False,
+        "ok": None,
+        "started_at": None,
+        "finished_at": None,
+        "readiness_level": None,
+        "allow_training": None,
+        "promotion_recommended": None,
+        "rollback_recommended": None,
+        "readiness_report": {},
+        "steps": [],
+    }
+
+
+def _load_learning_cycle_summary() -> dict:
+    status_path = Path("data/learning/learning_cycle_status.json")
+    if not status_path.exists():
+        return _empty_learning_cycle_summary()
+
+    try:
+        status = json.loads(status_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return _empty_learning_cycle_summary()
+
+    rollback = status.get("outputs", {}).get("rollback_trigger", {})
+    return {
+        "available": True,
+        "ok": status.get("ok"),
+        "started_at": status.get("started_at"),
+        "finished_at": status.get("finished_at"),
+        "readiness_level": status.get("gates", {}).get("readiness_level"),
+        "allow_training": status.get("gates", {}).get("allow_training"),
+        "promotion_recommended": status.get("gates", {}).get("promotion_recommended"),
+        "rollback_recommended": rollback.get("rollback_recommended"),
+        "readiness_report": status.get("outputs", {}).get("dataset_readiness", {}),
+        "steps": status.get("steps", []),
+    }
+
+
 def build_ops_summary() -> dict:
     settings = get_settings()
     init_state_store()
@@ -132,6 +221,9 @@ def build_ops_summary() -> dict:
     mode = get_active_profile_mode()
     kill_switch = get_kill_switch()
     trade_rows = fetch_trade_results_for_day()
+    adaptive = _load_adaptive_report_summary()
+    pair_session_policy = _load_pair_session_policy_summary()
+    learning_cycle = _load_learning_cycle_summary()
 
     return {
         "ok": True,
@@ -158,6 +250,9 @@ def build_ops_summary() -> dict:
         "activity": recent,
         "reviews": {
             "daily": review,
+            "adaptive": adaptive,
         },
+        "pair_session_policy": pair_session_policy,
+        "learning_cycle": learning_cycle,
         "readiness": _build_readiness(review, kill_switch, mode),
     }

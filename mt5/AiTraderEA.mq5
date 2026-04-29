@@ -30,6 +30,7 @@ input int NewsMediumImpactAfterMinutes = 15;
 
 struct DecisionResult
 {
+   string decision_id;
    string decision;
    int confidence;
    double entry;
@@ -72,6 +73,7 @@ static double g_lastTrackedEntryPrice = 0.0;
 static double g_lastTrackedStopLoss = 0.0;
 static double g_lastTrackedTakeProfit = 0.0;
 static string g_lastTrackedDecision = "";
+static string g_lastTrackedDecisionId = "";
 
 int OnInit()
 {
@@ -584,6 +586,7 @@ bool ParseDecisionFromResponse(string response, DecisionResult &result)
 {
    result.raw_response = response;
    string decisionBlock = ExtractDecisionSubtree(response);
+   if(!ExtractJsonString(decisionBlock, "decision_id", result.decision_id)) result.decision_id = "";
    if(!ExtractJsonString(decisionBlock, "decision", result.decision)) return false;
    double confidence = 0, entry = 0, sl = 0, tp = 0, rr = 0;
    if(!ExtractJsonNumber(decisionBlock, "confidence", confidence)) return false;
@@ -677,10 +680,11 @@ void SaveDebugSnapshot(string kind, string content)
 string BuildTradeResultPayload(DecisionResult &result, string positionTicket, double closePrice, double pnl, string finalResult, string notes)
 {
    return StringFormat(
-      "{\"symbol\":\"%s\",\"timeframe\":\"%s\",\"mode\":\"%s\",\"decision\":\"%s\",\"position_ticket\":\"%s\",\"entry_price\":%.5f,\"close_price\":%.5f,\"stop_loss\":%.5f,\"take_profit\":%.5f,\"pnl\":%.2f,\"result\":\"%s\",\"notes\":\"%s\"}",
+      "{\"symbol\":\"%s\",\"timeframe\":\"%s\",\"mode\":\"%s\",\"decision_id\":\"%s\",\"decision\":\"%s\",\"position_ticket\":\"%s\",\"entry_price\":%.5f,\"close_price\":%.5f,\"stop_loss\":%.5f,\"take_profit\":%.5f,\"pnl\":%.2f,\"result\":\"%s\",\"notes\":\"%s\"}",
       EscapeJson(_Symbol),
       TimeframeToString(PERIOD_CURRENT),
       GetModeString(),
+      EscapeJson(result.decision_id),
       result.decision,
       positionTicket,
       result.entry,
@@ -719,6 +723,7 @@ void TrackOpenPosition(DecisionResult &result)
    g_lastTrackedStopLoss = result.stop_loss;
    g_lastTrackedTakeProfit = result.take_profit;
    g_lastTrackedDecision = result.decision;
+   g_lastTrackedDecisionId = result.decision_id;
 }
 
 void TrackClosedPositionResult()
@@ -751,6 +756,7 @@ void TrackClosedPositionResult()
    {
       string resultLabel = pnl >= 0.0 ? "win" : "loss";
       DecisionResult temp;
+      temp.decision_id = g_lastTrackedDecisionId;
       temp.decision = g_lastTrackedDecision;
       temp.entry = g_lastTrackedEntryPrice;
       temp.stop_loss = g_lastTrackedStopLoss;
@@ -766,6 +772,7 @@ void TrackClosedPositionResult()
    g_lastTrackedStopLoss = 0.0;
    g_lastTrackedTakeProfit = 0.0;
    g_lastTrackedDecision = "";
+   g_lastTrackedDecisionId = "";
 }
 
 bool ExecuteApprovedTrade(DecisionResult &result)

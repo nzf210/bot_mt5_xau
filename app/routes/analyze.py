@@ -12,6 +12,7 @@ from app.services.kill_switch_service import get_kill_switch, set_kill_switch
 from app.services.news_service import cache_news_events
 from app.services.profile_service import get_profile_settings
 from app.services.vision_client import analyze_with_vision
+import uuid
 
 
 router = APIRouter()
@@ -47,6 +48,7 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
     if not valid:
         decision = build_wait_decision(reason)
 
+    decision.decision_id = str(uuid.uuid4())
     decision = apply_risk_filter(decision, market)
     if market.mode in {"demo", "live"}:
         phase = "C"
