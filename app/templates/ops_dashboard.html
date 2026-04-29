@@ -8,6 +8,18 @@
 <section class="flash flash-error">{{ error }}</section>
 {% endif %}
 
+<section class="card">
+  <h2>How to use this panel</h2>
+  <ul>
+    <li><strong>Apply Candidate Config</strong> requires typing <code>apply</code> in its confirm field.</li>
+    <li><strong>Run Learning Cycle Now</strong> requires typing <code>run</code> in its confirm field.</li>
+    <li><strong>Run LLM Review Now</strong> force-runs periodic LLM review immediately.</li>
+    <li><strong>LLM Periodic Review cadence</strong> controls slow-path external review only, not per-candle decisions.</li>
+    <li><strong>/analyze hot path</strong> is local-first now, so runtime decisions no longer depend on external LLM per candle.</li>
+  </ul>
+  <p class="muted">Detailed guide: see <code>OPS_UI_USAGE_GUIDE.md</code> in the repo.</p>
+</section>
+
 <div class="grid two">
   <section class="card">
     <h2>Readiness</h2>
