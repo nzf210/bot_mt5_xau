@@ -1,5 +1,6 @@
 import asyncio
 import json
+from shutil import which
 
 from app.config import get_settings
 from app.schemas import MarketRequest
@@ -22,6 +23,14 @@ def _extract_json_text(output: str) -> str:
     return text
 
 
+def _resolve_codex_command() -> str:
+    for candidate in ["codex", "codex.cmd", "codex.exe"]:
+        path = which(candidate)
+        if path:
+            return path
+    return "codex"
+
+
 async def analyze_with_openai_cli(market: MarketRequest) -> str:
     settings = get_settings()
     prompt = build_prompt(market, enable_vision=settings.enable_vision)
@@ -33,8 +42,9 @@ async def analyze_with_openai_cli(market: MarketRequest) -> str:
         f"{market_json}"
     )
 
+    codex_cmd = _resolve_codex_command()
     args = [
-        "codex",
+        codex_cmd,
         "exec",
         "--skip-git-repo-check",
         "--output-last-message",
