@@ -411,8 +411,8 @@ def main() -> None:
         if pd.isna(row.support_1) or pd.isna(row.resistance_1) or float(row.atr14) <= 0:
             continue
         market = build_market_request(df, idx, cfg)
-        decision = generate_local_decision(market)
-        filtered = apply_risk_filter(decision, market)
+        raw_decision = generate_local_decision(market)
+        filtered = apply_risk_filter(raw_decision.model_copy(deep=True), market)
         outcome = evaluate_outcome(df, idx, filtered, cfg.outcome_horizon_bars)
         rows.append({
             "time": row.time.isoformat(),
@@ -420,6 +420,14 @@ def main() -> None:
             "timeframe": cfg.timeframe,
             "session": market.session,
             "mode": cfg.mode,
+            "raw_decision": raw_decision.decision,
+            "raw_confidence": raw_decision.confidence,
+            "raw_entry": raw_decision.entry,
+            "raw_stop_loss": raw_decision.stop_loss,
+            "raw_take_profit": raw_decision.take_profit,
+            "raw_risk_reward": raw_decision.risk_reward,
+            "raw_reason": raw_decision.reason,
+            "filtered_decision": filtered.decision,
             "decision": filtered.decision,
             "confidence": filtered.confidence,
             "entry": filtered.entry,
@@ -453,6 +461,10 @@ def main() -> None:
     replay_df.to_csv(csv_out, index=False)
 
     trade_rows = replay_df[replay_df["decision"].isin(["BUY", "SELL"]) ] if not replay_df.empty else replay_df
+    top_filter_reasons = {}
+    if not replay_df.empty and "filter_reason" in replay_df.columns:
+        counts = replay_df["filter_reason"].fillna("unknown").value_counts().head(10)
+        top_filter_reasons = {str(k): int(v) for k, v in counts.items()}
     summary = {
         "ok": True,
         "config": asdict(cfg),
@@ -460,10 +472,14 @@ def main() -> None:
         "output_csv": str(csv_out),
         "rows": int(len(replay_df)),
         "trade_rows": int(len(trade_rows)),
+        "raw_buy_count": int((replay_df["raw_decision"] == "BUY").sum()) if not replay_df.empty else 0,
+        "raw_sell_count": int((replay_df["raw_decision"] == "SELL").sum()) if not replay_df.empty else 0,
+        "raw_wait_count": int((replay_df["raw_decision"] == "WAIT").sum()) if not replay_df.empty else 0,
         "buy_count": int((replay_df["decision"] == "BUY").sum()) if not replay_df.empty else 0,
         "sell_count": int((replay_df["decision"] == "SELL").sum()) if not replay_df.empty else 0,
         "wait_count": int((replay_df["decision"] == "WAIT").sum()) if not replay_df.empty else 0,
         "passed_filter_count": int((replay_df["passed_filter"] == True).sum()) if not replay_df.empty else 0,
+        "top_filter_reasons": top_filter_reasons,
         "tp_hit_count": int((replay_df["outcome_label"] == "tp_hit").sum()) if not replay_df.empty else 0,
         "sl_hit_count": int((replay_df["outcome_label"] == "sl_hit").sum()) if not replay_df.empty else 0,
         "net_outcome_pnl": round(float(replay_df["outcome_pnl"].sum()), 6) if not replay_df.empty else 0.0,

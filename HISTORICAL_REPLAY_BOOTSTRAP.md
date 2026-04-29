@@ -54,6 +54,14 @@ Script menulis:
 
 ## Isi dataset
 Beberapa field penting:
+- `raw_decision`
+- `raw_confidence`
+- `raw_entry`
+- `raw_stop_loss`
+- `raw_take_profit`
+- `raw_risk_reward`
+- `raw_reason`
+- `filtered_decision`
 - `decision`
 - `confidence`
 - `entry`
