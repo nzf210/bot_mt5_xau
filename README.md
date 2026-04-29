@@ -92,11 +92,30 @@ OPENAI_CLI_ENABLED=false
 GEMINI_API_ENABLED=false
 ```
 
-Recommended policy is CLI/session-auth first. If you want CLI-first mode to work, make sure `gemini` CLI is installed and already logged in on the machine.
+Recommended policy is CLI/session-auth first.
 
-For OpenAI without API keys, the intended path is Codex CLI with ChatGPT sign-in. Keep `OPENAI_CLI_ENABLED=false` until `codex` is installed and authenticated on the target machine.
+Important operator rule:
+- do not enable a CLI provider just because the flag exists
+- only enable providers that are actually installed, callable from terminal, and already authenticated on that machine
+
+Minimum verification commands:
+```bash
+gemini --version
+codex --version
+openai --version
+chatgpt --version
+```
+
+Interpretation:
+- if `gemini --version` fails, `gemini_cli` is not ready
+- if `codex/openai/chatgpt` are missing, `openai_cli` is not ready
+
+For OpenAI without API keys, the intended path is a compatible CLI tool with session auth on the target machine. Keep `OPENAI_CLI_ENABLED=false` until that tool is installed and authenticated.
 
 API-key provider paths should be treated as optional fallback only, not the default operating mode.
+
+See also:
+- `WINDOWS_CLI_PROVIDER_SETUP.md`
 
 #### 3. Run API
 ```bash
@@ -132,7 +151,23 @@ copy .env.example .env
 ```
 Then edit `.env` and put your Gemini API key.
 
-Default provider priority is CLI first, then optional Codex CLI, then optional API fallback. If you want that path on Windows RDP, install and authenticate Gemini CLI first, then optionally install Codex CLI and sign in with ChatGPT before enabling `OPENAI_CLI_ENABLED=true`.
+Default provider priority is CLI first, then optional Codex/OpenAI CLI, then optional API fallback.
+
+Before expecting `/analyze` to work, verify the provider tool actually exists on the machine:
+```powershell
+gemini --version
+codex --version
+openai --version
+chatgpt --version
+```
+
+Practical guidance:
+- install and authenticate Gemini CLI first
+- only enable `OPENAI_CLI_ENABLED=true` if a compatible OpenAI/Codex CLI really exists and is already authenticated on that machine
+- if OpenAI/Codex CLI commands are missing, keep that provider disabled
+
+See:
+- `WINDOWS_CLI_PROVIDER_SETUP.md`
 
 #### 3. Run API
 ```powershell
