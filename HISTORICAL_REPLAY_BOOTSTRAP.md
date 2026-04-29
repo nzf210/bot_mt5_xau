@@ -78,5 +78,6 @@ Beberapa field penting:
 ## Catatan penting
 - Ini bootstrap dataset, bukan pengganti penuh live outcomes.
 - Spread akan memakai kolom CSV jika ada. Kalau tidak ada, script memakai pendekatan fallback sederhana.
-- Higher timeframe saat ini masih proxy dari seri yang sama, jadi ini bagus untuk bootstrap awal tetapi belum seakurat multi-timeframe replay penuh.
+- Higher timeframe replay sekarang dibangun dari resample seri terpisah lalu di-merge kembali sebagai context mundur, jadi lebih realistis daripada proxy satu seri.
+- Ini masih belum identik dengan feed HTF broker-native multi-stream, jadi tetap perlakukan sebagai bootstrap yang kuat, bukan ground truth final.
 - Gunakan ini untuk mempercepat analytics, gating, dan eksperimen model awal, lalu tetap kalibrasikan dengan data live asli.

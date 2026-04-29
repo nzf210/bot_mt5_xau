@@ -85,11 +85,6 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     out["resistance_1"] = out["high"].rolling(20).max().shift(1)
     out["resistance_2"] = out["high"].rolling(40).max().shift(1)
 
-    out["ema20_htf"] = out["close"].ewm(span=20, adjust=False).mean()
-    out["ema50_htf"] = out["close"].ewm(span=50, adjust=False).mean()
-    out["htf_trend"] = "neutral"
-    out.loc[out["ema20_htf"] > out["ema50_htf"], "htf_trend"] = "bullish"
-    out.loc[out["ema20_htf"] < out["ema50_htf"], "htf_trend"] = "bearish"
     out["market_structure"] = "neutral"
     out.loc[out["ema20"] > out["ema50"], "market_structure"] = "higher_highs_higher_lows"
     out.loc[out["ema20"] < out["ema50"], "market_structure"] = "lower_highs_lower_lows"
@@ -110,6 +105,44 @@ def session_from_ts(ts: pd.Timestamp) -> str:
     if 16 <= hour < 21:
         return "NewYork"
     return "Asia"
+
+
+def timeframe_to_pandas_rule(tf: str) -> str:
+    mapping = {
+        "M1": "1min",
+        "M5": "5min",
+        "M15": "15min",
+        "M30": "30min",
+        "H1": "1h",
+        "H4": "4h",
+        "D1": "1D",
+    }
+    return mapping.get(tf.upper(), "1h")
+
+
+def build_htf_features(df: pd.DataFrame, higher_timeframe: str) -> pd.DataFrame:
+    rule = timeframe_to_pandas_rule(higher_timeframe)
+    htf = (
+        df.set_index("time")[["open", "high", "low", "close"]]
+        .resample(rule)
+        .agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+        .dropna()
+        .reset_index()
+    )
+    htf["ema20_htf"] = htf["close"].ewm(span=20, adjust=False).mean()
+    htf["ema50_htf"] = htf["close"].ewm(span=50, adjust=False).mean()
+    htf["htf_trend"] = "neutral"
+    htf.loc[htf["ema20_htf"] > htf["ema50_htf"], "htf_trend"] = "bullish"
+    htf.loc[htf["ema20_htf"] < htf["ema50_htf"], "htf_trend"] = "bearish"
+    return htf[["time", "ema20_htf", "ema50_htf", "htf_trend"]]
+
+
+def merge_htf_context(df: pd.DataFrame, higher_timeframe: str) -> pd.DataFrame:
+    htf = build_htf_features(df, higher_timeframe).sort_values("time")
+    base = df.sort_values("time").copy()
+    merged = pd.merge_asof(base, htf, on="time", direction="backward")
+    merged["htf_trend"] = merged["htf_trend"].fillna("neutral")
+    return merged
 
 
 def build_market_request(df: pd.DataFrame, idx: int, cfg: ReplayConfig) -> MarketRequest:
@@ -263,6 +296,7 @@ def main() -> None:
 
     EXPORTS.mkdir(parents=True, exist_ok=True)
     df = add_features(load_bars(Path(args.csv)))
+    df = merge_htf_context(df, cfg.higher_timeframe)
 
     rows: list[dict] = []
     start_idx = max(cfg.lookback_bars - 1, 50)
