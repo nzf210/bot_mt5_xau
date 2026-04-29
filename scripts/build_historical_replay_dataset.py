@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import pandas as pd
 
@@ -11,7 +16,6 @@ from app.schemas import Candle, Indicators, MarketRequest, NewsContext, Position
 from app.services.local_decision_engine import generate_local_decision
 from app.services.risk_filter import apply_risk_filter
 
-ROOT = Path(__file__).resolve().parents[1]
 EXPORTS = ROOT / "data" / "exports"
 
 
