@@ -23,6 +23,7 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
     settings = get_settings()
     phase = "A"
     raw_model_text = ""
+    payload_size = len(json.dumps(market.model_dump(), ensure_ascii=False))
     log_analyze_request(market)
     try:
         if settings.enable_vision and market.chart_image_base64:
@@ -32,20 +33,33 @@ async def analyze(market: MarketRequest) -> AnalyzeResponse:
             raw_model_text, provider_used = await analyze_with_provider_fallback(market)
             phase = f"A:{provider_used}"
     except Exception as exc:
-        decision = build_wait_decision(f"gemini_request_failed:{type(exc).__name__}")
+        decision = build_wait_decision(f"provider_request_failed:{type(exc).__name__}")
         log_ai_decision(market, raw_model_text, decision, phase)
-        log_trade_event("gemini_request_failed", {
+        log_trade_event("provider_request_failed", {
             "symbol": market.symbol,
             "timeframe": market.timeframe,
             "mode": market.mode,
+            "payload_size": payload_size,
             "error_type": type(exc).__name__,
             "error": str(exc),
         })
-        raise HTTPException(status_code=502, detail=decision.reason)
+        print(f"[analyze] provider failure symbol={market.symbol} timeframe={market.timeframe} mode={market.mode} payload_size={payload_size} error_type={type(exc).__name__} error={exc}")
+        raise HTTPException(status_code=502, detail=f"provider_request_failed:{type(exc).__name__}:{str(exc)}")
 
     decision = parse_trade_decision(raw_model_text)
     valid, reason = validate_trade_decision(decision)
     if not valid:
+        log_trade_event("provider_response_parse_failed", {
+            "symbol": market.symbol,
+            "timeframe": market.timeframe,
+            "mode": market.mode,
+            "payload_size": payload_size,
+            "phase": phase,
+            "raw_length": len(raw_model_text),
+            "raw_preview": raw_model_text[:1000],
+            "reason": reason,
+        })
+        print(f"[analyze] parse failure symbol={market.symbol} timeframe={market.timeframe} mode={market.mode} phase={phase} reason={reason} raw_preview={raw_model_text[:500]}")
         decision = build_wait_decision(reason)
 
     decision.decision_id = str(uuid.uuid4())
