@@ -91,7 +91,7 @@ void OnTick()
    if(!IsNewCandle())
       return;
 
-   Print("New candle detected. Symbol=", _Symbol, " TF=", TimeframeToString(PERIOD_CURRENT), " Mode=", GetModeString());
+   Print("New candle detected. Symbol=", _Symbol, " TF=", GetCurrentTimeframeString(), " Mode=", GetModeString());
 
    string newsReason = "";
    if(HasMt5NewsBlackout(_Symbol, newsReason))
@@ -191,14 +191,33 @@ string TimeframeToString(ENUM_TIMEFRAMES tf)
    switch(tf)
    {
       case PERIOD_M1: return "M1";
+      case PERIOD_M2: return "M2";
+      case PERIOD_M3: return "M3";
+      case PERIOD_M4: return "M4";
       case PERIOD_M5: return "M5";
+      case PERIOD_M6: return "M6";
+      case PERIOD_M10: return "M10";
+      case PERIOD_M12: return "M12";
       case PERIOD_M15: return "M15";
+      case PERIOD_M20: return "M20";
       case PERIOD_M30: return "M30";
       case PERIOD_H1: return "H1";
+      case PERIOD_H2: return "H2";
+      case PERIOD_H3: return "H3";
       case PERIOD_H4: return "H4";
+      case PERIOD_H6: return "H6";
+      case PERIOD_H8: return "H8";
+      case PERIOD_H12: return "H12";
       case PERIOD_D1: return "D1";
+      case PERIOD_W1: return "W1";
+      case PERIOD_MN1: return "MN1";
       default: return "UNKNOWN";
    }
+}
+
+string GetCurrentTimeframeString()
+{
+   return TimeframeToString((ENUM_TIMEFRAMES)_Period);
 }
 
 string GetModeString()
@@ -467,7 +486,7 @@ string BuildMarketContextJson()
    string json = StringFormat(
       "{\"symbol\":\"%s\",\"timeframe\":\"%s\",\"higher_timeframe\":\"%s\",\"session\":\"%s\",\"bid\":%.5f,\"ask\":%.5f,\"spread\":%.2f,\"ohlc\":%s,\"indicators\":{\"ema20\":%.5f,\"ema50\":%.5f,\"rsi14\":%.2f,\"macd_main\":%.5f,\"macd_signal\":%.5f,\"atr14\":%.5f},\"support_resistance\":{\"support_1\":%.5f,\"support_2\":%.5f,\"resistance_1\":%.5f,\"resistance_2\":%.5f},\"trend_context\":{\"htf_trend\":\"%s\",\"market_structure\":\"%s\",\"momentum\":\"%s\"},\"position_context\":{\"open_positions\":%d,\"has_buy_position\":%s,\"has_sell_position\":%s},\"news_context\":%s,\"mode\":\"%s\"%s}",
       EscapeJson(_Symbol),
-      TimeframeToString(PERIOD_CURRENT),
+      GetCurrentTimeframeString(),
       TimeframeToString(HigherTimeframe),
       GetSessionName(),
       bid,
@@ -656,7 +675,7 @@ string BuildSnapshotFileName(string kind)
       Mt5PayloadFolder,
       dt.year, dt.mon, dt.day, dt.hour, dt.min, dt.sec,
       NormalizeSymbolForNews(_Symbol),
-      TimeframeToString(PERIOD_CURRENT),
+      GetCurrentTimeframeString(),
       kind);
 }
 
