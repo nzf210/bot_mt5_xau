@@ -167,9 +167,10 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     loss = (-delta).clip(lower=0.0)
     avg_gain = gain.rolling(14).mean()
     avg_loss = loss.rolling(14).mean()
-    rs = avg_gain / avg_loss.replace(0, pd.NA)
-    out["rsi14"] = 100 - (100 / (1 + rs.astype(float)))
-    out["rsi14"] = out["rsi14"].fillna(50.0)
+    safe_avg_loss = avg_loss.replace(0, None)
+    rs = avg_gain / safe_avg_loss
+    out["rsi14"] = 100 - (100 / (1 + rs))
+    out["rsi14"] = pd.to_numeric(out["rsi14"], errors="coerce").fillna(50.0)
 
     ema12 = out["close"].ewm(span=12, adjust=False).mean()
     ema26 = out["close"].ewm(span=26, adjust=False).mean()
