@@ -156,6 +156,47 @@
 
 <div class="grid two">
   <section class="card">
+    <h2>Approval Summary</h2>
+    <dl class="kv">
+      <div><dt>Available</dt><dd>{{ summary.approval.available }}</dd></div>
+      <div><dt>Readiness Level</dt><dd>{{ summary.approval.readiness_level or '-' }}</dd></div>
+      <div><dt>Promotion Recommended</dt><dd>{{ summary.approval.promotion_recommended }}</dd></div>
+      <div><dt>Rollback Recommended</dt><dd>{{ summary.approval.rollback_recommended }}</dd></div>
+      <div><dt>Candidate Config</dt><dd>{{ summary.approval.candidate_config_exists }}</dd></div>
+      <div><dt>Recommended Config</dt><dd>{{ summary.approval.recommended_config_exists }}</dd></div>
+      <div><dt>Candidate Model</dt><dd>{{ summary.approval.candidate_model_exists }}</dd></div>
+      <div><dt>Current Model</dt><dd>{{ summary.approval.current_model_exists }}</dd></div>
+    </dl>
+    <h3>Approval Notes</h3>
+    <ul>
+      {% for note in summary.approval.approval_notes %}
+      <li>{{ note }}</li>
+      {% else %}
+      <li class="muted">No approval notes</li>
+      {% endfor %}
+    </ul>
+    <h3>Config Comparison</h3>
+    <ul>
+      {% for key, row in summary.approval.config_comparison.items() %}
+      <li>{{ key }} , current={{ row.current }} , recommended={{ row.recommended }}</li>
+      {% else %}
+      <li class="muted">No config comparison yet</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/ops/approval/prepare-config" class="action-form">
+      <button type="submit">Prepare Candidate Config</button>
+    </form>
+    <form method="post" action="/ops/approval/backup-model" class="action-form">
+      <button type="submit">Backup Current Model</button>
+    </form>
+    <form method="post" action="/ops/approval/apply-config" class="action-form">
+      <label for="confirm_apply">Type apply to confirm</label>
+      <input id="confirm_apply" name="confirm" type="text" placeholder="apply" />
+      <button type="submit">Apply Candidate Config</button>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>Learning Cycle</h2>
     <dl class="kv">
       <div><dt>Available</dt><dd>{{ summary.learning_cycle.available }}</dd></div>

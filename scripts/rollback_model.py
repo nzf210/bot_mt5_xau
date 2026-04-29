@@ -1,21 +1,32 @@
 from pathlib import Path
 import shutil
-from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_MODEL = ROOT / "models" / "current" / "model.json"
 BACKUP_DIR = ROOT / "models" / "reports" / "model_backups"
+CURRENT_MODEL = ROOT / "models" / "current" / "model.pkl"
+CURRENT_META = ROOT / "models" / "current" / "model_meta.json"
 
 
 def main() -> None:
-    if not CURRENT_MODEL.exists():
-        print(f"Current model not found: {CURRENT_MODEL}")
+    if not BACKUP_DIR.exists():
+        print(f"No backup directory: {BACKUP_DIR}")
         return
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUP_DIR / f"model_{ts}.json.bak"
-    shutil.copyfile(CURRENT_MODEL, backup_path)
-    print(f"Backed up current model to {backup_path}")
+
+    model_backups = sorted(BACKUP_DIR.glob("model_*.pkl.bak"))
+    if not model_backups:
+        print("No model backups found")
+        return
+
+    latest_model = model_backups[-1]
+    CURRENT_MODEL.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(latest_model, CURRENT_MODEL)
+    print(f"Rolled back {CURRENT_MODEL} from {latest_model}")
+
+    meta_backups = sorted(BACKUP_DIR.glob("model_meta_*.json.bak"))
+    if meta_backups:
+        latest_meta = meta_backups[-1]
+        shutil.copyfile(latest_meta, CURRENT_META)
+        print(f"Rolled back {CURRENT_META} from {latest_meta}")
 
 
 if __name__ == "__main__":

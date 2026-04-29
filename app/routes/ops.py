@@ -1,3 +1,7 @@
+import subprocess
+import sys
+from pathlib import Path
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -9,6 +13,19 @@ from app.services.profile_service import set_active_profile_mode
 
 templates = Jinja2Templates(directory="app/templates")
 router = APIRouter()
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _run_script(script_rel: str) -> tuple[bool, str]:
+    script_path = ROOT / script_rel
+    proc = subprocess.run(
+        [sys.executable, str(script_path)],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+    )
+    output = (proc.stdout or proc.stderr or "").strip().replace("\n", " | ")[:300]
+    return proc.returncode == 0, output
 
 
 @router.get("/ops/summary")
@@ -50,3 +67,40 @@ async def ops_set_kill_switch(active: str = Form(...), reason: str = Form("")) -
         url=f"/ops?message=kill_switch_updated:{str(payload.get('active')).lower()}",
         status_code=303,
     )
+
+
+@router.post("/ops/approval/prepare-config")
+async def ops_prepare_candidate_config() -> RedirectResponse:
+    ok1, out1 = _run_script("scripts/generate_config_recommendation.py")
+    ok2, out2 = _run_script("scripts/auto_apply_candidate_config.py") if ok1 else (False, "skipped")
+    ok3, out3 = _run_script("scripts/compare_config_vs_recommendation.py") if ok2 else (False, "skipped")
+    ok4, out4 = _run_script("scripts/build_approval_summary.py") if ok3 else (False, "skipped")
+    if ok1 and ok2 and ok3 and ok4:
+        return RedirectResponse(url="/ops?message=approval_prepare_config_ok", status_code=303)
+    return RedirectResponse(url=f"/ops?error=approval_prepare_config_failed:{out1}|{out2}|{out3}|{out4}", status_code=303)
+
+
+@router.post("/ops/approval/backup-model")
+async def ops_backup_current_model() -> RedirectResponse:
+    ok, out = _run_script("scripts/backup_current_model.py")
+    if ok:
+        return RedirectResponse(url="/ops?message=approval_backup_model_ok", status_code=303)
+    return RedirectResponse(url=f"/ops?error=approval_backup_model_failed:{out}", status_code=303)
+
+
+@router.post("/ops/approval/apply-config")
+async def ops_apply_candidate_config(confirm: str = Form("")) -> RedirectResponse:
+    summary = build_ops_summary()
+    approval = summary.get("approval", {})
+    if confirm.strip().lower() != "apply":
+        return RedirectResponse(url="/ops?error=approval_apply_config_requires_confirm_apply", status_code=303)
+    if approval.get("rollback_recommended"):
+        return RedirectResponse(url="/ops?error=approval_apply_config_blocked_by_rollback_signal", status_code=303)
+    if not approval.get("candidate_config_exists"):
+        return RedirectResponse(url="/ops?error=approval_apply_config_missing_candidate", status_code=303)
+    ok, out = _run_script("scripts/approve_candidate_config.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=approval_apply_config_failed:{out}", status_code=303)
+    _run_script("scripts/compare_config_vs_recommendation.py")
+    _run_script("scripts/build_approval_summary.py")
+    return RedirectResponse(url="/ops?message=approval_apply_config_ok", status_code=303)

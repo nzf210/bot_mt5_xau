@@ -43,6 +43,10 @@ def main() -> None:
             "current": current.get("DISABLED_SYMBOLS"),
             "recommended": ",".join(rec.get("recommended_disabled_symbols", [])),
         },
+        "SYMBOL_SESSION_POLICY_JSON": {
+            "current": current.get("SYMBOL_SESSION_POLICY_JSON"),
+            "recommended": json.dumps(rec.get("recommended_symbol_session_policy", {}), separators=(",", ":")),
+        },
     }
 
     OUTPUT_JSON.write_text(json.dumps(comparison, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

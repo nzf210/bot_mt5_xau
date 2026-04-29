@@ -212,6 +212,28 @@ def _load_learning_cycle_summary() -> dict:
     }
 
 
+def _load_approval_summary() -> dict:
+    path = Path("data/exports/approval_summary.json")
+    if not path.exists():
+        return {
+            "available": False,
+            "approval_notes": [],
+            "config_comparison": {},
+            "recommended_symbol_session_policy": {},
+        }
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {
+            "available": False,
+            "approval_notes": [],
+            "config_comparison": {},
+            "recommended_symbol_session_policy": {},
+        }
+    payload["available"] = True
+    return payload
+
+
 def build_ops_summary() -> dict:
     settings = get_settings()
     init_state_store()
@@ -224,6 +246,7 @@ def build_ops_summary() -> dict:
     adaptive = _load_adaptive_report_summary()
     pair_session_policy = _load_pair_session_policy_summary()
     learning_cycle = _load_learning_cycle_summary()
+    approval = _load_approval_summary()
 
     return {
         "ok": True,
@@ -254,5 +277,6 @@ def build_ops_summary() -> dict:
         },
         "pair_session_policy": pair_session_policy,
         "learning_cycle": learning_cycle,
+        "approval": approval,
         "readiness": _build_readiness(review, kill_switch, mode),
     }
