@@ -49,13 +49,39 @@ async def _run_codex(args: list[str], timeout_seconds: int) -> tuple[int, str, s
     return process.returncode, stdout_text, stderr_text
 
 
+def _build_compact_market_payload(market: MarketRequest) -> dict:
+    candles = market.ohlc[-6:]
+    last_candle = candles[-1] if candles else None
+    return {
+        "symbol": market.symbol,
+        "timeframe": market.timeframe,
+        "higher_timeframe": market.higher_timeframe,
+        "session": market.session,
+        "mode": market.mode,
+        "prices": {
+            "bid": market.bid,
+            "ask": market.ask,
+            "spread": market.spread,
+        },
+        "latest_candle": last_candle.model_dump() if last_candle else None,
+        "recent_ohlc": [c.model_dump() for c in candles],
+        "indicators": market.indicators.model_dump(),
+        "support_resistance": market.support_resistance.model_dump(),
+        "trend_context": market.trend_context.model_dump(),
+        "position_context": market.position_context.model_dump(),
+        "news_context": market.news_context.model_dump() if market.news_context else None,
+    }
+
+
 async def analyze_with_openai_cli(market: MarketRequest) -> str:
     settings = get_settings()
     prompt = build_prompt(market, enable_vision=settings.enable_vision)
-    market_json = json.dumps(market.model_dump(exclude={"chart_image_base64", "chart_image_mime"}), ensure_ascii=False)
+    compact_payload = _build_compact_market_payload(market)
+    market_json = json.dumps(compact_payload, ensure_ascii=False)
     full_prompt = (
         f"{prompt}\n\n"
-        "Structured market payload below. Return ONLY valid JSON matching the expected decision schema. "
+        "Below is structured market data with explicit fields for prices, recent candles, indicators, support/resistance, trend, positions, and news. "
+        "Base your decision only on this structured payload. Return ONLY valid JSON matching the expected decision schema. "
         "Do not wrap the answer in markdown fences.\n\n"
         f"{market_json}"
     )
