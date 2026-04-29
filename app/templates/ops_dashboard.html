@@ -60,6 +60,7 @@
         {% endfor %}
       </select>
       <button type="submit">Update Profile</button>
+      <p class="muted">Changes the active runtime profile only. Other guardrails like emergency stop still apply.</p>
     </form>
   </section>
 
@@ -79,6 +80,7 @@
       <label for="reason">Reason</label>
       <input id="reason" name="reason" type="text" placeholder="manual_control" />
       <button type="submit">Apply Kill Switch</button>
+      <p class="muted">Use <code>true</code> to hard-stop runtime actions, or <code>false</code> to release it. Add a reason for auditability.</p>
     </form>
   </section>
 </div>
@@ -198,9 +200,11 @@
         {% endfor %}
       </select>
       <button type="submit">Update LLM Review Settings</button>
+      <p class="muted">Cadence only affects periodic external review. It does not control per-candle `/analyze` decisions.</p>
     </form>
     <form method="post" action="/ops/llm-review/run-now" class="action-form">
       <button type="submit">Run LLM Review Now</button>
+      <p class="muted">Force-runs the periodic LLM review immediately, without waiting for the next scheduled cadence.</p>
     </form>
   </section>
 
@@ -234,17 +238,21 @@
     </ul>
     <form method="post" action="/ops/approval/prepare-config" class="action-form">
       <button type="submit">Prepare Candidate Config</button>
+      <p class="muted">Builds recommendation artifacts and refreshes approval summary for review.</p>
     </form>
     <form method="post" action="/ops/approval/backup-model" class="action-form">
       <button type="submit">Backup Current Model</button>
+      <p class="muted">Creates a backup of the currently active model before promotion or rollback-sensitive changes.</p>
     </form>
     <form method="post" action="/ops/approval/rebuild-summary" class="action-form">
       <button type="submit">Rebuild Approval Summary</button>
+      <p class="muted">Refreshes config comparison and approval notes without generating a new candidate config.</p>
     </form>
     <form method="post" action="/ops/approval/apply-config" class="action-form">
       <label for="confirm_apply">Type apply to confirm</label>
       <input id="confirm_apply" name="confirm" type="text" placeholder="apply" />
       <button type="submit">Apply Candidate Config</button>
+      <p class="muted">Requires typing <code>apply</code>. Use only after reviewing approval summary and rollback signals.</p>
     </form>
   </section>
 
@@ -296,6 +304,7 @@
       <label for="confirm_run">Type run to confirm</label>
       <input id="confirm_run" name="confirm" type="text" placeholder="run" />
       <button type="submit">Run Learning Cycle Now</button>
+      <p class="muted">Requires typing <code>run</code>. Triggers the local learning pipeline and may refresh approval artifacts.</p>
     </form>
   </section>
 
