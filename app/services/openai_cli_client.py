@@ -31,6 +31,24 @@ def _resolve_codex_command() -> str:
     return "codex"
 
 
+async def _run_codex(args: list[str], timeout_seconds: int) -> tuple[int, str, str]:
+    process = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout_seconds)
+    except asyncio.TimeoutError:
+        process.kill()
+        await process.communicate()
+        raise RuntimeError(f"openai_cli_timeout args={' '.join(args[:6])}")
+
+    stdout_text = stdout.decode("utf-8", errors="ignore").strip()
+    stderr_text = stderr.decode("utf-8", errors="ignore").strip()
+    return process.returncode, stdout_text, stderr_text
+
+
 async def analyze_with_openai_cli(market: MarketRequest) -> str:
     settings = get_settings()
     prompt = build_prompt(market, enable_vision=settings.enable_vision)
@@ -43,38 +61,18 @@ async def analyze_with_openai_cli(market: MarketRequest) -> str:
     )
 
     codex_cmd = _resolve_codex_command()
-    args = [
-        codex_cmd,
-        "exec",
-        "--skip-git-repo-check",
-        "--output-last-message",
-        full_prompt,
+    attempts = [
+        [codex_cmd, "exec", "--skip-git-repo-check", "--output-last-message", full_prompt],
+        [codex_cmd, "exec", "--skip-git-repo-check", full_prompt],
     ]
 
-    process = await asyncio.create_subprocess_exec(
-        *args,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-
-    try:
-        stdout, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=settings.openai_cli_timeout_seconds
-        )
-    except asyncio.TimeoutError:
-        process.kill()
-        await process.communicate()
-        raise RuntimeError("openai_cli_timeout")
-
-    stdout_text = stdout.decode("utf-8", errors="ignore").strip()
-    stderr_text = stderr.decode("utf-8", errors="ignore").strip()
-
-    if process.returncode != 0:
-        raise RuntimeError(
-            f"openai_cli_failed: exit={process.returncode} stderr={stderr_text} stdout={stdout_text[:500]}"
+    failure_notes: list[str] = []
+    for args in attempts:
+        returncode, stdout_text, stderr_text = await _run_codex(args, settings.openai_cli_timeout_seconds)
+        if returncode == 0 and stdout_text:
+            return _extract_json_text(stdout_text)
+        failure_notes.append(
+            f"rc={returncode} stdout={stdout_text[:400]} stderr={stderr_text[:400]} args={' '.join(args[:6])}"
         )
 
-    if not stdout_text:
-        raise RuntimeError(f"openai_cli_empty_output stderr={stderr_text}")
-
-    return _extract_json_text(stdout_text)
+    raise RuntimeError("openai_cli_failed: " + " || ".join(failure_notes))
