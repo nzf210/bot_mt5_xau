@@ -1,9 +1,7 @@
-import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from app.config import get_settings
 from app.schemas import AnalyzeResponse, MarketRequest
-from app.services.decision_parser import build_wait_decision, parse_trade_decision, validate_trade_decision
-from app.services.gemini_provider import analyze_with_provider_fallback
+from app.services.local_decision_engine import generate_local_decision
 from app.services.logger_service import log_ai_decision, log_trade_event, log_analyze_request
 from app.services.risk_filter import apply_risk_filter
 from pydantic import BaseModel
@@ -12,7 +10,6 @@ from app.services.mt5_result_service import TradeResultIngest, ingest_trade_resu
 from app.services.kill_switch_service import get_kill_switch, set_kill_switch
 from app.services.news_service import cache_news_events
 from app.services.profile_service import get_profile_settings
-from app.services.vision_client import analyze_with_vision
 import uuid
 
 
@@ -22,58 +19,27 @@ router = APIRouter()
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(market: MarketRequest) -> AnalyzeResponse:
     settings = get_settings()
-    phase = "A"
+    phase = "A:local"
     raw_model_text = ""
-    payload_size = len(json.dumps(market.model_dump(), ensure_ascii=False))
     log_analyze_request(market)
-    try:
-        if settings.enable_vision and market.chart_image_base64:
-            raw_model_text = await analyze_with_vision(market)
-            phase = "D"
-        else:
-            raw_model_text, provider_used = await analyze_with_provider_fallback(market)
-            phase = f"A:{provider_used}"
-    except Exception as exc:
-        decision = build_wait_decision(f"provider_request_failed:{type(exc).__name__}")
-        log_ai_decision(market, raw_model_text, decision, phase)
-        log_trade_event("provider_request_failed", {
-            "symbol": market.symbol,
-            "timeframe": market.timeframe,
-            "mode": market.mode,
-            "payload_size": payload_size,
-            "error_type": type(exc).__name__,
-            "error": str(exc),
-        })
-        print(f"[analyze] provider failure symbol={market.symbol} timeframe={market.timeframe} mode={market.mode} payload_size={payload_size} error_type={type(exc).__name__} error={exc}")
-        raise HTTPException(status_code=502, detail=f"provider_request_failed:{type(exc).__name__}:{str(exc)}")
 
-    decision = parse_trade_decision(raw_model_text)
-    valid, reason = validate_trade_decision(decision)
-    if not valid:
-        log_trade_event("provider_response_parse_failed", {
-            "symbol": market.symbol,
-            "timeframe": market.timeframe,
-            "mode": market.mode,
-            "payload_size": payload_size,
-            "phase": phase,
-            "raw_length": len(raw_model_text),
-            "raw_preview": raw_model_text[:1000],
-            "reason": reason,
-        })
-        print(f"[analyze] parse failure symbol={market.symbol} timeframe={market.timeframe} mode={market.mode} phase={phase} reason={reason} raw_preview={raw_model_text[:500]}")
-        decision = build_wait_decision(reason)
-
+    decision = generate_local_decision(market)
     decision.decision_id = str(uuid.uuid4())
     decision = apply_risk_filter(decision, market)
+
     if market.mode in {"demo", "live"}:
         phase = "C"
-    if settings.enable_vision and market.chart_image_base64:
-        phase = "D"
     if market.mode == "live" and settings.allow_live_trading and not settings.emergency_stop:
         phase = "E"
 
     log_ai_decision(market, raw_model_text, decision, phase)
-    log_trade_event("decision_emitted", {"symbol": market.symbol, "timeframe": market.timeframe, "mode": market.mode, "decision": decision.model_dump()})
+    log_trade_event("decision_emitted", {
+        "symbol": market.symbol,
+        "timeframe": market.timeframe,
+        "mode": market.mode,
+        "decision": decision.model_dump(),
+        "decision_engine": "local",
+    })
     return AnalyzeResponse(ok=True, phase=phase, decision=decision, raw_model_text=raw_model_text)
 
 
