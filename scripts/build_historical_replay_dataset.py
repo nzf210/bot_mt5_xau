@@ -30,27 +30,98 @@ class ReplayConfig:
     session_tz: str = "UTC"
 
 
-def load_bars(csv_path: Path) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
-    cols = {c.lower(): c for c in df.columns}
-    required = ["time", "open", "high", "low", "close"]
-    missing = [c for c in required if c not in cols]
-    if missing:
-        raise ValueError(f"missing required columns: {missing}")
+def _read_csv_flexible(csv_path: Path) -> pd.DataFrame:
+    candidates = [
+        {"sep": ","},
+        {"sep": ";"},
+        {"sep": "\t"},
+        {"sep": None, "engine": "python"},
+    ]
+    last_error = None
+    for kwargs in candidates:
+        try:
+            df = pd.read_csv(csv_path, **kwargs)
+            if not df.empty or len(df.columns) > 1:
+                return df
+        except Exception as exc:
+            last_error = exc
+    if last_error:
+        raise last_error
+    return pd.read_csv(csv_path)
 
-    rename_map = {
-        cols["time"]: "time",
-        cols["open"]: "open",
-        cols["high"]: "high",
-        cols["low"]: "low",
-        cols["close"]: "close",
+
+def load_bars(csv_path: Path) -> pd.DataFrame:
+    df = _read_csv_flexible(csv_path)
+    raw_cols = list(df.columns)
+    normalized_cols = {str(c).strip().lower().replace(" ", "_"): c for c in raw_cols}
+
+    rename_map: dict[str, str] = {}
+
+    time_col = normalized_cols.get("time")
+    date_col = normalized_cols.get("date")
+    open_col = normalized_cols.get("open")
+    high_col = normalized_cols.get("high")
+    low_col = normalized_cols.get("low")
+    close_col = normalized_cols.get("close")
+    spread_col = normalized_cols.get("spread")
+    tick_volume_col = normalized_cols.get("tick_volume") or normalized_cols.get("tickvol")
+
+    if not time_col and date_col and "time" in normalized_cols:
+        df["time_combined"] = df[date_col].astype(str).str.strip() + " " + df[normalized_cols["time"]].astype(str).str.strip()
+        time_col = "time_combined"
+    elif not time_col and date_col and "<time>" in normalized_cols:
+        df["time_combined"] = df[date_col].astype(str).str.strip() + " " + df[normalized_cols["<time>"]].astype(str).str.strip()
+        time_col = "time_combined"
+
+    if not time_col and "<date>" in normalized_cols and "<time>" in normalized_cols:
+        df["time_combined"] = df[normalized_cols["<date>"]].astype(str).str.strip() + " " + df[normalized_cols["<time>"]].astype(str).str.strip()
+        time_col = "time_combined"
+
+    if not open_col:
+        open_col = normalized_cols.get("<open>")
+    if not high_col:
+        high_col = normalized_cols.get("<high>")
+    if not low_col:
+        low_col = normalized_cols.get("<low>")
+    if not close_col:
+        close_col = normalized_cols.get("<close>")
+    if not spread_col:
+        spread_col = normalized_cols.get("<spread>")
+    if not tick_volume_col:
+        tick_volume_col = normalized_cols.get("<tickvol>") or normalized_cols.get("tick_volume")
+    if not time_col:
+        time_col = normalized_cols.get("<date>")
+
+    required_map = {
+        "time": time_col,
+        "open": open_col,
+        "high": high_col,
+        "low": low_col,
+        "close": close_col,
     }
-    if "spread" in cols:
-        rename_map[cols["spread"]] = "spread"
-    if "tick_volume" in cols:
-        rename_map[cols["tick_volume"]] = "tick_volume"
+    missing = [key for key, value in required_map.items() if not value]
+    if missing:
+        raise ValueError(f"missing required columns: {missing} | raw_columns={raw_cols}")
+
+    rename_map[time_col] = "time"
+    rename_map[open_col] = "open"
+    rename_map[high_col] = "high"
+    rename_map[low_col] = "low"
+    rename_map[close_col] = "close"
+    if spread_col:
+        rename_map[spread_col] = "spread"
+    if tick_volume_col:
+        rename_map[tick_volume_col] = "tick_volume"
+
     df = df.rename(columns=rename_map)
-    df["time"] = pd.to_datetime(df["time"], utc=True)
+    df["time"] = pd.to_datetime(df["time"], utc=True, errors="coerce")
+    df = df.dropna(subset=["time", "open", "high", "low", "close"]).copy()
+    for col in ["open", "high", "low", "close", "spread"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    if "tick_volume" in df.columns:
+        df["tick_volume"] = pd.to_numeric(df["tick_volume"], errors="coerce")
+    df = df.dropna(subset=["open", "high", "low", "close"]).copy()
     df = df.sort_values("time").reset_index(drop=True)
     if "spread" not in df.columns:
         df["spread"] = 0.0
