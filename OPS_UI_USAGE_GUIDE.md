@@ -207,11 +207,12 @@ Membuat dataset candidate dari replay baseline terakhir.
 Melatih model awal dari dataset bootstrap candidate.
 
 ### Evaluate Bootstrap Model
-Evaluasi sanity-check awal model bootstrap.
+Evaluasi model bootstrap dengan validation split berbasis urutan waktu (time-based split) agar metrik lebih jujur dibanding evaluasi di seluruh data yang sama.
 
 Catatan:
 - ini masih tahap candidate, bukan izin live trading
 - gunakan setelah baseline replay terbaik sementara dibekukan
+- promotion candidate sekarang lebih ketat karena mempertimbangkan validation accuracy dan balanced accuracy
 
 ## 10. Pair-Session Policy
 Menampilkan policy pair x session yang aktif.

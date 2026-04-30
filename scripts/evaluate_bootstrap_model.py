@@ -5,7 +5,7 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, confusion_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_CSV = ROOT / "data" / "exports" / "bootstrap_candidate_dataset.csv"
@@ -22,18 +22,30 @@ def main() -> None:
     model = joblib.load(MODEL_PATH)
 
     feature_cols = meta.get("numeric_features", []) + meta.get("categorical_features", [])
-    X = df[feature_cols].copy()
-    y = df["target_profitable"].astype(int)
+    if "time" in df.columns:
+        df = df.sort_values("time").reset_index(drop=True)
+    split_idx = max(int(len(df) * 0.8), 1)
+    valid_df = df.iloc[split_idx:].copy()
+    if valid_df.empty:
+        valid_df = df.copy()
+
+    X = valid_df[feature_cols].copy()
+    y = valid_df["target_profitable"].astype(int)
     preds = model.predict(X)
     acc = float(accuracy_score(y, preds))
+    bal_acc = float(balanced_accuracy_score(y, preds))
     report = classification_report(y, preds, output_dict=True)
+    cm = confusion_matrix(y, preds).tolist()
 
     payload = {
         "ok": True,
         "rows": int(len(df)),
+        "validation_rows": int(len(valid_df)),
         "accuracy": round(acc, 4),
+        "balanced_accuracy": round(bal_acc, 4),
+        "confusion_matrix": cm,
         "report": report,
-        "promotion_candidate": acc >= 0.58,
+        "promotion_candidate": acc >= 0.58 and bal_acc >= 0.55 and len(valid_df) >= 100,
     }
     OUTPUT_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2, ensure_ascii=False))
