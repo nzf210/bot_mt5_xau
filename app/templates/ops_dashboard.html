@@ -171,7 +171,7 @@
     </form>
     <h3>Top Filter Reasons</h3>
     <ul>
-      {% for key, value in summary.replay_lab.status.top_filter_reasons.items() if summary.replay_lab.status.available %}
+      {% for key, value in (summary.replay_lab.status.get('top_filter_reasons', {}) if summary.replay_lab.status.available else {}).items() %}
       <li>{{ key }}: {{ value }}</li>
       {% else %}
       <li class="muted">No replay diagnostics yet</li>
