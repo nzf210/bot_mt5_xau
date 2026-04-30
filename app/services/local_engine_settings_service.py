@@ -11,6 +11,7 @@ DEFAULTS = {
     "rsi_bearish_threshold": 48.0,
     "min_rr_threshold": 1.0,
     "trend_strictness": "strict",
+    "trend_mode": "ema_position",
 }
 
 
@@ -28,7 +29,7 @@ def load_local_engine_settings() -> dict:
     return merged
 
 
-def update_local_engine_settings(*, spread_atr_max_ratio: float, rsi_bullish_threshold: float, rsi_bearish_threshold: float, min_rr_threshold: float, trend_strictness: str) -> dict:
+def update_local_engine_settings(*, spread_atr_max_ratio: float, rsi_bullish_threshold: float, rsi_bearish_threshold: float, min_rr_threshold: float, trend_strictness: str, trend_mode: str) -> dict:
     if spread_atr_max_ratio <= 0:
         raise ValueError("invalid_spread_atr_max_ratio")
     if not (0 <= rsi_bearish_threshold <= 100 and 0 <= rsi_bullish_threshold <= 100):
@@ -37,12 +38,15 @@ def update_local_engine_settings(*, spread_atr_max_ratio: float, rsi_bullish_thr
         raise ValueError("invalid_min_rr_threshold")
     if trend_strictness not in {"strict", "moderate", "loose"}:
         raise ValueError("invalid_trend_strictness")
+    if trend_mode not in {"ema_position", "ema_slope", "hybrid"}:
+        raise ValueError("invalid_trend_mode")
     payload = load_local_engine_settings()
     payload["spread_atr_max_ratio"] = round(float(spread_atr_max_ratio), 4)
     payload["rsi_bullish_threshold"] = round(float(rsi_bullish_threshold), 2)
     payload["rsi_bearish_threshold"] = round(float(rsi_bearish_threshold), 2)
     payload["min_rr_threshold"] = round(float(min_rr_threshold), 2)
     payload["trend_strictness"] = trend_strictness
+    payload["trend_mode"] = trend_mode
     SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     SETTINGS_PATH.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return payload

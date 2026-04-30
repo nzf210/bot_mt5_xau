@@ -116,6 +116,14 @@ Mode:
 - `moderate`: lebih longgar, cukup dekat dengan EMA20 sambil tetap searah HTF
 - `loose`: paling longgar, cukup arah EMA + HTF
 
+### Trend Mode
+Menentukan sumber logika trend yang dipakai engine.
+
+Mode:
+- `ema_position`: berbasis posisi harga terhadap EMA
+- `ema_slope`: lebih menekankan arah/slope EMA
+- `hybrid`: gabungan posisi dan slope, biasanya kandidat bagus untuk replay diagnostics
+
 ### Update Local Engine Settings
 Simpan nilai baru tanpa mengedit `.env` manual.
 
