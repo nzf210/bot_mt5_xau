@@ -169,6 +169,22 @@
       <button type="submit">Run Historical Replay</button>
       <p class="muted">Menjalankan bootstrap replay historis dengan setting saat ini dan menyimpan summary hasil terakhir untuk audit cepat.</p>
     </form>
+    <h3>Top Raw Reasons</h3>
+    <ul>
+      {% for key, value in (summary.replay_lab.status.get('top_raw_reasons', {}) if summary.replay_lab.status.available else {}).items() %}
+      <li>{{ key }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No raw replay reason diagnostics yet</li>
+      {% endfor %}
+    </ul>
+    <h3>Top Raw Warnings</h3>
+    <ul>
+      {% for key, value in (summary.replay_lab.status.get('top_raw_warnings', {}) if summary.replay_lab.status.available else {}).items() %}
+      <li>{{ key }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No raw replay warning diagnostics yet</li>
+      {% endfor %}
+    </ul>
     <h3>Top Filter Reasons</h3>
     <ul>
       {% for key, value in (summary.replay_lab.status.get('top_filter_reasons', {}) if summary.replay_lab.status.available else {}).items() %}

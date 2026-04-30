@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -427,6 +428,7 @@ def main() -> None:
             "raw_take_profit": raw_decision.take_profit,
             "raw_risk_reward": raw_decision.risk_reward,
             "raw_reason": raw_decision.reason,
+            "raw_warnings": " | ".join(raw_decision.warnings or []),
             "filtered_decision": filtered.decision,
             "decision": filtered.decision,
             "confidence": filtered.confidence,
@@ -462,9 +464,20 @@ def main() -> None:
 
     trade_rows = replay_df[replay_df["decision"].isin(["BUY", "SELL"]) ] if not replay_df.empty else replay_df
     top_filter_reasons = {}
+    top_raw_reasons = {}
+    top_raw_warnings = {}
     if not replay_df.empty and "filter_reason" in replay_df.columns:
         counts = replay_df["filter_reason"].fillna("unknown").value_counts().head(10)
         top_filter_reasons = {str(k): int(v) for k, v in counts.items()}
+    if not replay_df.empty and "raw_reason" in replay_df.columns:
+        counts = replay_df["raw_reason"].fillna("unknown").value_counts().head(10)
+        top_raw_reasons = {str(k): int(v) for k, v in counts.items()}
+    if not replay_df.empty and "raw_warnings" in replay_df.columns:
+        warning_counter: Counter[str] = Counter()
+        for raw in replay_df["raw_warnings"].fillna("").tolist():
+            for item in [part.strip() for part in str(raw).split("|") if part.strip()]:
+                warning_counter[item] += 1
+        top_raw_warnings = {str(k): int(v) for k, v in warning_counter.most_common(10)}
     summary = {
         "ok": True,
         "config": asdict(cfg),
@@ -479,6 +492,8 @@ def main() -> None:
         "sell_count": int((replay_df["decision"] == "SELL").sum()) if not replay_df.empty else 0,
         "wait_count": int((replay_df["decision"] == "WAIT").sum()) if not replay_df.empty else 0,
         "passed_filter_count": int((replay_df["passed_filter"] == True).sum()) if not replay_df.empty else 0,
+        "top_raw_reasons": top_raw_reasons,
+        "top_raw_warnings": top_raw_warnings,
         "top_filter_reasons": top_filter_reasons,
         "tp_hit_count": int((replay_df["outcome_label"] == "tp_hit").sum()) if not replay_df.empty else 0,
         "sl_hit_count": int((replay_df["outcome_label"] == "sl_hit").sum()) if not replay_df.empty else 0,
