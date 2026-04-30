@@ -47,7 +47,9 @@ def main() -> None:
         "confusion_matrix": cm,
         "report": report,
         "target": target_label,
-        "promotion_candidate": acc >= 0.58 and bal_acc >= 0.55 and len(valid_df) >= 100,
+        "intended_use": "secondary_quality_filter",
+        "quality_filter_candidate": bal_acc >= 0.53 and len(valid_df) >= 100,
+        "promotion_candidate": False,
     }
     OUTPUT_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2, ensure_ascii=False))

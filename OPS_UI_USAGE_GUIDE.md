@@ -197,8 +197,8 @@ Gunakan ini untuk:
 - membandingkan replay baru vs baseline
 - menyiapkan langkah berikutnya menuju bootstrap candidate
 
-## 9. Bootstrap Candidate Workflow
-Bagian ini menjembatani replay baseline ke model candidate awal.
+## 9. Bootstrap Quality Filter Workflow
+Bagian ini menjembatani replay baseline ke model candidate awal yang diposisikan sebagai secondary quality filter, bukan decision core utama.
 
 ### Bootstrap Target Label
 Pilih label target yang akan dipelajari model bootstrap.
@@ -222,14 +222,19 @@ Dataset candidate sekarang juga menambahkan feature enrichment seperti:
 - target tambahan seperti TP hit dan RR-positive outcome
 
 ### Train Bootstrap Model
-Melatih model awal dari dataset bootstrap candidate.
+Melatih model awal dari dataset bootstrap candidate sebagai quality filter tambahan.
 
 ### Evaluate Bootstrap Model
 Evaluasi model bootstrap dengan validation split berbasis urutan waktu (time-based split) agar metrik lebih jujur dibanding evaluasi di seluruh data yang sama.
 
+Interpretasi hasil:
+- fokus utamanya apakah model cukup layak sebagai `secondary_quality_filter`
+- bukan apakah model sudah cukup untuk menjadi decision core atau auto-promotion live
+
 Catatan:
 - ini masih tahap candidate, bukan izin live trading
 - gunakan setelah baseline replay terbaik sementara dibekukan
+- `promotion_candidate` sengaja tidak dipakai sebagai approval live pada workflow ini
 - promotion candidate sekarang lebih ketat karena mempertimbangkan validation accuracy dan balanced accuracy
 
 ## 10. Pair-Session Policy

@@ -74,6 +74,7 @@ def main() -> None:
         "categorical_features": [c for c in CATEGORICAL if c in X.columns],
         "target": target_label,
         "model_type": "random_forest_classifier",
+        "intended_use": "secondary_quality_filter",
         "model_path": str(MODEL_PATH),
     }
     META_PATH.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

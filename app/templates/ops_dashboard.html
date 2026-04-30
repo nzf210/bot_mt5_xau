@@ -243,7 +243,7 @@
   </section>
 
   <section class="card">
-    <h2>Bootstrap Candidate Workflow</h2>
+    <h2>Bootstrap Quality Filter Workflow</h2>
     <dl class="kv">
       <div><dt>Target Label</dt><dd>{{ summary.bootstrap_workflow.settings.target_label or '-' }}</dd></div>
       <div><dt>Candidate Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.rows or '-' }}</dd></div>
@@ -255,6 +255,8 @@
       <div><dt>Accuracy</dt><dd>{{ summary.bootstrap_workflow.evaluation.accuracy or '-' }}</dd></div>
       <div><dt>Balanced Accuracy</dt><dd>{{ summary.bootstrap_workflow.evaluation.balanced_accuracy or '-' }}</dd></div>
       <div><dt>Validation Rows</dt><dd>{{ summary.bootstrap_workflow.evaluation.validation_rows or '-' }}</dd></div>
+      <div><dt>Intended Use</dt><dd>{{ summary.bootstrap_workflow.evaluation.intended_use or summary.bootstrap_workflow.model.intended_use or '-' }}</dd></div>
+      <div><dt>Quality Filter Candidate</dt><dd>{{ summary.bootstrap_workflow.evaluation.quality_filter_candidate or '-' }}</dd></div>
       <div><dt>Promotion Candidate</dt><dd>{{ summary.bootstrap_workflow.evaluation.promotion_candidate or '-' }}</dd></div>
     </dl>
     <form method="post" action="/ops/bootstrap/settings" class="action-form">
@@ -269,15 +271,15 @@
     </form>
     <form method="post" action="/ops/bootstrap/build-candidate" class="action-form">
       <button type="submit">Build Bootstrap Candidate</button>
-      <p class="muted">Membuat dataset candidate dari replay baseline terakhir dengan row BUY/SELL yang bisa dipakai untuk bootstrap model awal.</p>
+      <p class="muted">Membuat dataset candidate dari replay baseline terakhir dengan row BUY/SELL yang bisa dipakai untuk bootstrap quality filter awal.</p>
     </form>
     <form method="post" action="/ops/bootstrap/train-model" class="action-form">
       <button type="submit">Train Bootstrap Model</button>
-      <p class="muted">Melatih model awal dari candidate dataset bootstrap. Ini untuk diagnosis/model candidate, bukan auto-promote live.</p>
+      <p class="muted">Melatih model awal sebagai candidate quality filter tambahan. Ini bukan decision core dan bukan auto-promote live.</p>
     </form>
     <form method="post" action="/ops/bootstrap/evaluate-model" class="action-form">
       <button type="submit">Evaluate Bootstrap Model</button>
-      <p class="muted">Evaluasi model bootstrap di dataset bootstrap yang sama untuk sanity check awal sebelum workflow evaluasi lebih ketat.</p>
+      <p class="muted">Evaluasi out-of-sample untuk menilai apakah model cukup layak dipakai sebagai secondary quality filter, bukan predictor utama.</p>
     </form>
   </section>
 
