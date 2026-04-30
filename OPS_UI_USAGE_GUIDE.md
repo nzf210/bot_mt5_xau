@@ -123,13 +123,37 @@ Gunakan ini kalau:
 - ingin tes provider external sekarang
 - ingin refresh review output manual
 
-## 8. Pair-Session Policy
+## 8. Historical Replay Lab
+Bagian ini dipakai untuk diagnosis historis berbasis CSV.
+
+### Field utama
+- `CSV Path`: lokasi file historical export
+- `Symbol`: label simbol untuk replay
+- `Timeframe`: timeframe dasar replay
+- `Higher Timeframe`: context HTF untuk replay
+- `Mode`: biasanya `dry_run`
+- `Lookback Bars`: jumlah candle yang dipakai untuk snapshot lokal
+- `Outcome Horizon Bars`: jumlah candle ke depan untuk evaluasi outcome
+- `Output Prefix`: nama prefix file hasil export replay
+
+### Save Replay Lab Settings
+Menyimpan setting replay historis saat ini.
+
+### Run Historical Replay
+Menjalankan replay historis menggunakan setting saat ini, lalu menyimpan summary hasil terakhir ke dashboard `/ops`.
+
+Gunakan ini untuk:
+- audit kenapa engine sering `WAIT`
+- melihat raw buy/sell/wait vs filtered buy/sell/wait
+- mengecek top filter reasons sebelum masuk tahap training
+
+## 9. Pair-Session Policy
 Menampilkan policy pair x session yang aktif.
 
-## 9. Adaptive Pair-Session Insight
+## 10. Adaptive Pair-Session Insight
 Menampilkan hasil analytics pair-session jika report tersedia.
 
-## 10. Trade Summary / Decision Summary
+## 11. Trade Summary / Decision Summary
 Dipakai untuk memantau hasil runtime dan filter reasons.
 
 ## Recommended Safe Workflow
@@ -145,7 +169,12 @@ Dipakai untuk memantau hasil runtime dan filter reasons.
 6. untuk local engine tuning:
    - cek log `/analyze`
    - sesuaikan `Spread/ATR Max Ratio` bila bot terlalu sering WAIT karena spread
-7. untuk external review:
+7. untuk replay historis:
+   - isi field di `Historical Replay Lab`
+   - simpan setting
+   - jalankan `Run Historical Replay`
+   - audit raw buy/sell/wait dan top filter reasons
+8. untuk external review:
    - atur cadence di `LLM Periodic Review`
    - gunakan `Run LLM Review Now` bila perlu
 

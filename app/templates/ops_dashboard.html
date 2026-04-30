@@ -138,6 +138,48 @@
 
 <div class="grid two">
   <section class="card">
+    <h2>Historical Replay Lab</h2>
+    <dl class="kv">
+      <div><dt>Last Status</dt><dd>{{ summary.replay_lab.status.ok if summary.replay_lab.status.available else '-' }}</dd></div>
+      <div><dt>Rows</dt><dd>{{ summary.replay_lab.status.rows if summary.replay_lab.status.available else '-' }}</dd></div>
+      <div><dt>Raw Buy/Sell/Wait</dt><dd>{% if summary.replay_lab.status.available %}{{ summary.replay_lab.status.raw_buy_count or 0 }}/{{ summary.replay_lab.status.raw_sell_count or 0 }}/{{ summary.replay_lab.status.raw_wait_count or 0 }}{% else %}-{% endif %}</dd></div>
+      <div><dt>Filtered Buy/Sell/Wait</dt><dd>{% if summary.replay_lab.status.available %}{{ summary.replay_lab.status.buy_count or 0 }}/{{ summary.replay_lab.status.sell_count or 0 }}/{{ summary.replay_lab.status.wait_count or 0 }}{% else %}-{% endif %}</dd></div>
+    </dl>
+    <form method="post" action="/ops/replay-lab/settings" class="action-form">
+      <label for="replay_csv_path">CSV Path</label>
+      <input id="replay_csv_path" name="csv_path" type="text" value="{{ summary.replay_lab.settings.csv_path }}" />
+      <label for="replay_symbol">Symbol</label>
+      <input id="replay_symbol" name="symbol" type="text" value="{{ summary.replay_lab.settings.symbol }}" />
+      <label for="replay_timeframe">Timeframe</label>
+      <input id="replay_timeframe" name="timeframe" type="text" value="{{ summary.replay_lab.settings.timeframe }}" />
+      <label for="replay_higher_timeframe">Higher Timeframe</label>
+      <input id="replay_higher_timeframe" name="higher_timeframe" type="text" value="{{ summary.replay_lab.settings.higher_timeframe }}" />
+      <label for="replay_mode">Mode</label>
+      <input id="replay_mode" name="mode" type="text" value="{{ summary.replay_lab.settings.mode }}" />
+      <label for="replay_lookback_bars">Lookback Bars</label>
+      <input id="replay_lookback_bars" name="lookback_bars" type="number" min="3" step="1" value="{{ summary.replay_lab.settings.lookback_bars }}" />
+      <label for="replay_outcome_horizon_bars">Outcome Horizon Bars</label>
+      <input id="replay_outcome_horizon_bars" name="outcome_horizon_bars" type="number" min="1" step="1" value="{{ summary.replay_lab.settings.outcome_horizon_bars }}" />
+      <label for="replay_output_prefix">Output Prefix</label>
+      <input id="replay_output_prefix" name="output_prefix" type="text" value="{{ summary.replay_lab.settings.output_prefix }}" />
+      <button type="submit">Save Replay Lab Settings</button>
+      <p class="muted">Set lokasi CSV historical dan parameter replay sebelum menjalankan diagnosis historis.</p>
+    </form>
+    <form method="post" action="/ops/replay-lab/run" class="action-form">
+      <button type="submit">Run Historical Replay</button>
+      <p class="muted">Menjalankan bootstrap replay historis dengan setting saat ini dan menyimpan summary hasil terakhir untuk audit cepat.</p>
+    </form>
+    <h3>Top Filter Reasons</h3>
+    <ul>
+      {% for key, value in summary.replay_lab.status.top_filter_reasons.items() if summary.replay_lab.status.available %}
+      <li>{{ key }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No replay diagnostics yet</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
     <h2>Pair-Session Policy</h2>
     <p>
       Configured:

@@ -12,6 +12,7 @@ from app.services.llm_review_settings_service import update_llm_review_settings
 from app.services.local_engine_settings_service import update_local_engine_settings
 from app.services.ops_summary_service import build_ops_summary
 from app.services.profile_service import set_active_profile_mode
+from app.services.replay_lab_service import STATUS_PATH, load_replay_lab_settings, update_replay_lab_settings
 
 
 templates = Jinja2Templates(directory="app/templates")
@@ -136,6 +137,57 @@ async def ops_run_learning_cycle_manual(confirm: str = Form("")) -> RedirectResp
         return RedirectResponse(url=f"/ops?error=learning_run_cycle_failed:{out}", status_code=303)
     _run_script("scripts/build_approval_summary.py")
     return RedirectResponse(url="/ops?message=learning_run_cycle_ok", status_code=303)
+
+
+@router.post("/ops/replay-lab/settings")
+async def ops_update_replay_lab_settings(
+    csv_path: str = Form(...),
+    symbol: str = Form(...),
+    timeframe: str = Form(...),
+    higher_timeframe: str = Form(...),
+    mode: str = Form("dry_run"),
+    lookback_bars: str = Form("10"),
+    outcome_horizon_bars: str = Form("12"),
+    output_prefix: str = Form("historical_replay"),
+) -> RedirectResponse:
+    try:
+        update_replay_lab_settings(
+            csv_path=csv_path.strip(),
+            symbol=symbol.strip(),
+            timeframe=timeframe.strip(),
+            higher_timeframe=higher_timeframe.strip(),
+            mode=mode.strip(),
+            lookback_bars=int(lookback_bars),
+            outcome_horizon_bars=int(outcome_horizon_bars),
+            output_prefix=output_prefix.strip(),
+        )
+    except Exception as exc:
+        return RedirectResponse(url=f"/ops?error=replay_lab_settings_failed:{str(exc)}", status_code=303)
+    return RedirectResponse(url="/ops?message=replay_lab_settings_updated", status_code=303)
+
+
+@router.post("/ops/replay-lab/run")
+async def ops_run_replay_lab() -> RedirectResponse:
+    settings = load_replay_lab_settings()
+    ok, out = _run_script(
+        "scripts/build_historical_replay_dataset.py",
+        [
+            "--csv", settings["csv_path"],
+            "--symbol", settings["symbol"],
+            "--timeframe", settings["timeframe"],
+            "--higher-timeframe", settings["higher_timeframe"],
+            "--mode", settings["mode"],
+            "--lookback-bars", str(settings["lookback_bars"]),
+            "--outcome-horizon-bars", str(settings["outcome_horizon_bars"]),
+            "--output-prefix", settings["output_prefix"],
+        ],
+    )
+    STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if ok:
+        STATUS_PATH.write_text(out + "\n", encoding="utf-8")
+        return RedirectResponse(url="/ops?message=replay_lab_run_ok", status_code=303)
+    STATUS_PATH.write_text('{"available": true, "ok": false, "error": ' + json.dumps(out) + '}\n', encoding="utf-8")
+    return RedirectResponse(url=f"/ops?error=replay_lab_run_failed:{out}", status_code=303)
 
 
 @router.post("/ops/llm-review/settings")

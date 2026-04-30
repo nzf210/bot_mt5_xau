@@ -9,6 +9,7 @@ from app.services.kill_switch_service import get_kill_switch
 from app.services.llm_review_settings_service import load_llm_review_settings
 from app.services.local_engine_settings_service import load_local_engine_settings
 from app.services.profile_service import get_active_profile_mode, get_profile_settings, list_profile_modes
+from app.services.replay_lab_service import load_replay_lab_settings, load_replay_lab_status
 from app.services.provider_registry import get_provider_status_summary
 from app.services.result_store import fetch_trade_results_for_day, init_result_store, sum_pnl_for_day
 from app.services.review_service import build_daily_review
@@ -275,6 +276,8 @@ def build_ops_summary() -> dict:
     approval = _load_approval_summary()
     llm_review = _load_llm_review_summary()
     local_engine_settings = load_local_engine_settings()
+    replay_lab_settings = load_replay_lab_settings()
+    replay_lab_status = load_replay_lab_status()
 
     return {
         "ok": True,
@@ -309,6 +312,10 @@ def build_ops_summary() -> dict:
         "llm_review": llm_review,
         "local_engine": {
             "settings": local_engine_settings,
+        },
+        "replay_lab": {
+            "settings": replay_lab_settings,
+            "status": replay_lab_status,
         },
         "readiness": _build_readiness(review, kill_switch, mode),
     }
