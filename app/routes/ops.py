@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from app.services.kill_switch_service import set_kill_switch
 from app.services.llm_review_settings_service import update_llm_review_settings
 from app.services.local_engine_settings_service import update_local_engine_settings
+from app.services.bootstrap_settings_service import update_bootstrap_settings
 from app.services.ops_summary_service import build_ops_summary
 from app.services.profile_service import set_active_profile_mode
 from app.services.replay_experiments_service import append_replay_experiment, load_replay_baseline, save_replay_baseline
@@ -226,6 +227,15 @@ async def ops_save_replay_baseline() -> RedirectResponse:
         return RedirectResponse(url="/ops?error=replay_baseline_invalid_status", status_code=303)
     save_replay_baseline(payload)
     return RedirectResponse(url="/ops?message=replay_baseline_saved", status_code=303)
+
+
+@router.post("/ops/bootstrap/settings")
+async def ops_update_bootstrap_settings(target_label: str = Form("target_profitable")) -> RedirectResponse:
+    try:
+        update_bootstrap_settings(target_label=target_label)
+    except ValueError as exc:
+        return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
+    return RedirectResponse(url="/ops?message=bootstrap_settings_updated", status_code=303)
 
 
 @router.post("/ops/bootstrap/build-candidate")

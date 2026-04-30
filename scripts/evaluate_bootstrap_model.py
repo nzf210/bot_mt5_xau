@@ -29,8 +29,9 @@ def main() -> None:
     if valid_df.empty:
         valid_df = df.copy()
 
+    target_label = meta.get("target", "target_profitable")
     X = valid_df[feature_cols].copy()
-    y = valid_df["target_profitable"].astype(int)
+    y = valid_df[target_label].astype(int)
     preds = model.predict(X)
     acc = float(accuracy_score(y, preds))
     bal_acc = float(balanced_accuracy_score(y, preds))
@@ -45,6 +46,7 @@ def main() -> None:
         "balanced_accuracy": round(bal_acc, 4),
         "confusion_matrix": cm,
         "report": report,
+        "target": target_label,
         "promotion_candidate": acc >= 0.58 and bal_acc >= 0.55 and len(valid_df) >= 100,
     }
     OUTPUT_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

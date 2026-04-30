@@ -16,6 +16,7 @@ INPUT_CSV = ROOT / "data" / "exports" / "bootstrap_candidate_dataset.csv"
 MODEL_DIR = ROOT / "models" / "bootstrap"
 MODEL_PATH = MODEL_DIR / "bootstrap_model.pkl"
 META_PATH = MODEL_DIR / "bootstrap_model_meta.json"
+SETTINGS_PATH = ROOT / "data" / "bootstrap_settings.json"
 
 NUMERIC = [
     "confidence", "risk_reward", "spread", "ema20", "ema50", "rsi14", "macd_main", "macd_signal", "atr14",
@@ -34,6 +35,11 @@ def main() -> None:
     if df.empty:
         raise SystemExit("bootstrap candidate dataset empty")
 
+    settings = {"target_label": "target_profitable"}
+    if SETTINGS_PATH.exists():
+        settings.update(json.loads(SETTINGS_PATH.read_text(encoding="utf-8")))
+    target_label = settings.get("target_label", "target_profitable")
+
     if "time" in df.columns:
         df = df.sort_values("time").reset_index(drop=True)
     split_idx = max(int(len(df) * 0.8), 1)
@@ -42,7 +48,7 @@ def main() -> None:
     if valid_df.empty:
         valid_df = train_df.copy()
 
-    y = train_df["target_profitable"].astype(int)
+    y = train_df[target_label].astype(int)
     X = train_df[[c for c in NUMERIC + CATEGORICAL if c in train_df.columns]].copy()
 
     preprocessor = ColumnTransformer(
@@ -66,7 +72,7 @@ def main() -> None:
         "validation_rows": int(len(valid_df)),
         "numeric_features": [c for c in NUMERIC if c in X.columns],
         "categorical_features": [c for c in CATEGORICAL if c in X.columns],
-        "target": "target_profitable",
+        "target": target_label,
         "model_type": "random_forest_classifier",
         "model_path": str(MODEL_PATH),
     }

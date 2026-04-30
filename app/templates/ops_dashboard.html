@@ -245,6 +245,7 @@
   <section class="card">
     <h2>Bootstrap Candidate Workflow</h2>
     <dl class="kv">
+      <div><dt>Target Label</dt><dd>{{ summary.bootstrap_workflow.settings.target_label or '-' }}</dd></div>
       <div><dt>Candidate Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.rows or '-' }}</dd></div>
       <div><dt>Buy Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.buy_rows or '-' }}</dd></div>
       <div><dt>Sell Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.sell_rows or '-' }}</dd></div>
@@ -256,6 +257,16 @@
       <div><dt>Validation Rows</dt><dd>{{ summary.bootstrap_workflow.evaluation.validation_rows or '-' }}</dd></div>
       <div><dt>Promotion Candidate</dt><dd>{{ summary.bootstrap_workflow.evaluation.promotion_candidate or '-' }}</dd></div>
     </dl>
+    <form method="post" action="/ops/bootstrap/settings" class="action-form">
+      <label for="bootstrap_target_label">Bootstrap Target Label</label>
+      <select id="bootstrap_target_label" name="target_label">
+        {% for label in ['target_profitable', 'target_tp_hit', 'target_rr_positive'] %}
+        <option value="{{ label }}" {% if label == summary.bootstrap_workflow.settings.target_label %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Update Bootstrap Settings</button>
+      <p class="muted">Pilih label target yang akan dipelajari model bootstrap. Gunakan ini untuk membandingkan label mana yang paling learnable.</p>
+    </form>
     <form method="post" action="/ops/bootstrap/build-candidate" class="action-form">
       <button type="submit">Build Bootstrap Candidate</button>
       <p class="muted">Membuat dataset candidate dari replay baseline terakhir dengan row BUY/SELL yang bisa dipakai untuk bootstrap model awal.</p>

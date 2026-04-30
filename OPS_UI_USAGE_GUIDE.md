@@ -200,6 +200,16 @@ Gunakan ini untuk:
 ## 9. Bootstrap Candidate Workflow
 Bagian ini menjembatani replay baseline ke model candidate awal.
 
+### Bootstrap Target Label
+Pilih label target yang akan dipelajari model bootstrap.
+
+Pilihan saat ini:
+- `target_profitable`
+- `target_tp_hit`
+- `target_rr_positive`
+
+Gunakan ini untuk membandingkan label mana yang paling learnable.
+
 ### Build Bootstrap Candidate
 Membuat dataset candidate dari replay baseline terakhir.
 
