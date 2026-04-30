@@ -123,6 +123,7 @@ Catatan:
 - nilai lebih tinggi bisa membuat bot lebih sering memberi setup
 - nilai terlalu tinggi bisa meloloskan kondisi spread buruk
 - replay lama tidak perlu dihapus, biarkan sebagai pembanding historis setelah tuning baru dijalankan
+- RR dan S/R construction sekarang juga bisa berubah lewat patch engine, jadi bandingkan hasil replay sebelum dan sesudah perubahan logika, bukan hanya angka threshold
 
 ## 7. LLM Periodic Review
 Bagian ini mengontrol slow-path external LLM review.

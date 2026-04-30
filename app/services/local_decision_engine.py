@@ -90,11 +90,12 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     resistance_1 = float(market.support_resistance.resistance_1)
     support_2 = float(market.support_resistance.support_2)
     resistance_2 = float(market.support_resistance.resistance_2)
+    sr_range = max(resistance_1 - support_1, atr14)
 
     if bullish_trend and bullish_momentum and close_price > support_1:
         entry = float(market.ask)
-        stop_loss = min(support_1, close_price - atr14)
-        take_profit = max(resistance_1, close_price + (atr14 * 2.0))
+        stop_loss = min(close_price - (atr14 * 0.9), support_1 + (0.15 * sr_range))
+        take_profit = max(close_price + (atr14 * 1.8), resistance_1, close_price + (0.35 * sr_range))
         rr = _rr(entry, stop_loss, take_profit)
         if rr < min_rr_threshold:
             return _build_wait("Bullish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
@@ -119,8 +120,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
 
     if bearish_trend and bearish_momentum and close_price < resistance_1:
         entry = float(market.bid)
-        stop_loss = max(resistance_1, close_price + atr14)
-        take_profit = min(support_1, close_price - (atr14 * 2.0), support_2 if support_2 > 0 else close_price - (atr14 * 2.0))
+        stop_loss = max(close_price + (atr14 * 0.9), resistance_1 - (0.15 * sr_range))
+        take_profit = min(close_price - (atr14 * 1.8), support_1, close_price - (0.35 * sr_range), support_2 if support_2 > 0 else close_price - (atr14 * 1.8))
         rr = _rr(entry, stop_loss, take_profit)
         if rr < min_rr_threshold:
             return _build_wait("Bearish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
