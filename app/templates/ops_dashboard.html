@@ -16,6 +16,7 @@
     <li><strong>Run LLM Review Now</strong> force-runs periodic LLM review immediately.</li>
     <li><strong>LLM Periodic Review cadence</strong> controls slow-path external review only, not per-candle decisions.</li>
     <li><strong>/analyze hot path</strong> is local-first now, so runtime decisions no longer depend on external LLM per candle.</li>
+    <li><strong>Spread/ATR Max Ratio</strong> tunes how strict the local engine is about spread versus volatility. Higher values allow more setups through.</li>
   </ul>
   <p class="muted">Detailed guide: see <code>OPS_UI_USAGE_GUIDE.md</code> in the repo.</p>
 </section>
@@ -86,6 +87,19 @@
 </div>
 
 <div class="grid two">
+  <section class="card">
+    <h2>Local Engine</h2>
+    <dl class="kv">
+      <div><dt>Spread/ATR Max Ratio</dt><dd>{{ summary.local_engine.settings.spread_atr_max_ratio }}</dd></div>
+    </dl>
+    <form method="post" action="/ops/local-engine/settings" class="action-form">
+      <label for="spread_atr_max_ratio">Spread/ATR Max Ratio</label>
+      <input id="spread_atr_max_ratio" name="spread_atr_max_ratio" type="number" min="0.01" max="1" step="0.01" value="{{ summary.local_engine.settings.spread_atr_max_ratio }}" />
+      <button type="submit">Update Local Engine Settings</button>
+      <p class="muted">Controls how much spread is tolerated relative to ATR before the local engine returns WAIT. Useful for broker-specific GOLD spread tuning.</p>
+    </form>
+  </section>
+
   <section class="card">
     <h2>Provider</h2>
     <dl class="kv">

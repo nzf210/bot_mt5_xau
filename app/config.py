@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     cooldown_minutes: int = 30
     max_daily_loss: float = 100.0
     model_score_threshold: float = 0.5
+    local_spread_atr_max_ratio: float = 0.12
 
     allow_live_trading: bool = False
     enable_vision: bool = False

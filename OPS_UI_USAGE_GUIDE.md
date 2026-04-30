@@ -76,7 +76,25 @@ Action ini menjalankan learning cycle on-demand, misalnya:
 - rollback trigger check
 - train/evaluate candidate jika gate mengizinkan
 
-## 6. LLM Periodic Review
+## 6. Local Engine Settings
+Bagian ini mengontrol rule inti untuk `/analyze` hot path.
+
+### Spread/ATR Max Ratio
+Nilai ini menentukan seberapa besar spread masih ditoleransi dibanding ATR sebelum local engine memutuskan `WAIT`.
+
+Contoh interpretasi:
+- `0.08` = sangat ketat
+- `0.12` = lebih realistis untuk GOLD CFD dengan spread agak tebal
+- `0.15` = lebih longgar untuk testing broker tertentu
+
+### Update Local Engine Settings
+Simpan nilai baru tanpa mengedit `.env` manual.
+
+Catatan:
+- nilai lebih tinggi bisa membuat bot lebih sering memberi setup
+- nilai terlalu tinggi bisa meloloskan kondisi spread buruk
+
+## 7. LLM Periodic Review
 Bagian ini mengontrol slow-path external LLM review.
 
 ### Enabled
@@ -105,13 +123,13 @@ Gunakan ini kalau:
 - ingin tes provider external sekarang
 - ingin refresh review output manual
 
-## 7. Pair-Session Policy
+## 8. Pair-Session Policy
 Menampilkan policy pair x session yang aktif.
 
-## 8. Adaptive Pair-Session Insight
+## 9. Adaptive Pair-Session Insight
 Menampilkan hasil analytics pair-session jika report tersedia.
 
-## 9. Trade Summary / Decision Summary
+## 10. Trade Summary / Decision Summary
 Dipakai untuk memantau hasil runtime dan filter reasons.
 
 ## Recommended Safe Workflow
@@ -124,7 +142,10 @@ Dipakai untuk memantau hasil runtime dan filter reasons.
    - jika yakin, `Apply Candidate Config` dengan confirm `apply`
 5. untuk learning workflow:
    - `Run Learning Cycle Now` dengan confirm `run`
-6. untuk external review:
+6. untuk local engine tuning:
+   - cek log `/analyze`
+   - sesuaikan `Spread/ATR Max Ratio` bila bot terlalu sering WAIT karena spread
+7. untuk external review:
    - atur cadence di `LLM Periodic Review`
    - gunakan `Run LLM Review Now` bila perlu
 

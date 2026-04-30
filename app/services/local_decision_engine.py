@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from app.config import get_settings
 from app.models.trade_decision import TradeDecision
 from app.schemas import MarketRequest
+from app.services.local_engine_settings_service import load_local_engine_settings
 from app.services.model_service import score_market_with_model
 
 
@@ -33,6 +35,9 @@ def _build_wait(reason: str, warnings: list[str] | None = None) -> TradeDecision
 
 def generate_local_decision(market: MarketRequest) -> TradeDecision:
     warnings: list[str] = []
+    settings = get_settings()
+    local_settings = load_local_engine_settings()
+    spread_atr_max_ratio = float(local_settings.get("spread_atr_max_ratio", settings.local_spread_atr_max_ratio))
 
     if len(market.ohlc) < 3:
         return _build_wait("Not enough candle history for local analysis", ["Need at least 3 candles"])
@@ -62,7 +67,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     _append_debug_warning(warnings, "spread_price", f"{spread_price:.5f}")
     _append_debug_warning(warnings, "atr14", f"{atr14:.5f}")
     _append_debug_warning(warnings, "spread_atr_ratio", f"{atr_spread_ratio:.4f}")
-    if atr14 > 0 and atr_spread_ratio > 0.08:
+    _append_debug_warning(warnings, "spread_atr_max_ratio", f"{spread_atr_max_ratio:.4f}")
+    if atr14 > 0 and atr_spread_ratio > spread_atr_max_ratio:
         return _build_wait("Spread too high relative to current volatility", warnings + ["Spread/ATR ratio too high"])
 
     support_1 = float(market.support_resistance.support_1)

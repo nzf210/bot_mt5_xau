@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.services.kill_switch_service import set_kill_switch
 from app.services.llm_review_settings_service import update_llm_review_settings
+from app.services.local_engine_settings_service import update_local_engine_settings
 from app.services.ops_summary_service import build_ops_summary
 from app.services.profile_service import set_active_profile_mode
 
@@ -147,6 +148,15 @@ async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: s
     except ValueError as exc:
         return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
     return RedirectResponse(url="/ops?message=llm_review_settings_updated", status_code=303)
+
+
+@router.post("/ops/local-engine/settings")
+async def ops_update_local_engine_settings(spread_atr_max_ratio: str = Form("0.12")) -> RedirectResponse:
+    try:
+        update_local_engine_settings(spread_atr_max_ratio=float(spread_atr_max_ratio))
+    except ValueError as exc:
+        return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
+    return RedirectResponse(url="/ops?message=local_engine_settings_updated", status_code=303)
 
 
 @router.post("/ops/llm-review/run-now")
