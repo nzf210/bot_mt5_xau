@@ -189,6 +189,14 @@ Gunakan ini untuk:
 - mengecek `top raw warnings`
 - mengecek top filter reasons sebelum masuk tahap training
 
+### Save Current Replay as Baseline
+Menyimpan hasil replay terakhir sebagai baseline kandidat terbaik sementara.
+
+Gunakan ini untuk:
+- membekukan best-known tuning saat ini
+- membandingkan replay baru vs baseline
+- menyiapkan langkah berikutnya menuju bootstrap candidate
+
 ## 9. Pair-Session Policy
 Menampilkan policy pair x session yang aktif.
 

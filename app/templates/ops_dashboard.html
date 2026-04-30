@@ -194,6 +194,28 @@
       <button type="submit">Run Historical Replay</button>
       <p class="muted">Menjalankan bootstrap replay historis dengan setting saat ini dan menyimpan summary hasil terakhir untuk audit cepat.</p>
     </form>
+    <form method="post" action="/ops/replay-lab/save-baseline" class="action-form">
+      <button type="submit">Save Current Replay as Baseline</button>
+      <p class="muted">Simpan hasil replay terakhir sebagai baseline kandidat terbaik sementara untuk pembanding run berikutnya.</p>
+    </form>
+    <h3>Baseline</h3>
+    <ul>
+      {% if summary.replay_lab.baseline.available %}
+      <li>raw buy/sell/wait: {{ summary.replay_lab.baseline.raw_buy_count or 0 }}/{{ summary.replay_lab.baseline.raw_sell_count or 0 }}/{{ summary.replay_lab.baseline.raw_wait_count or 0 }}</li>
+      <li>filtered buy/sell/wait: {{ summary.replay_lab.baseline.buy_count or 0 }}/{{ summary.replay_lab.baseline.sell_count or 0 }}/{{ summary.replay_lab.baseline.wait_count or 0 }}</li>
+      <li>net outcome pnl: {{ summary.replay_lab.baseline.net_outcome_pnl or 0 }}</li>
+      {% else %}
+      <li class="muted">No baseline saved yet</li>
+      {% endif %}
+    </ul>
+    <h3>Recent Replay Runs</h3>
+    <ul>
+      {% for run in summary.replay_lab.recent_runs %}
+      <li>{{ run.config.symbol }} {{ run.config.timeframe }} , raw={{ run.raw_buy_count or 0 }}/{{ run.raw_sell_count or 0 }}/{{ run.raw_wait_count or 0 }} , filtered={{ run.buy_count or 0 }}/{{ run.sell_count or 0 }}/{{ run.wait_count or 0 }}</li>
+      {% else %}
+      <li class="muted">No replay runs recorded yet</li>
+      {% endfor %}
+    </ul>
     <h3>Top Raw Reasons</h3>
     <ul>
       {% for key, value in (summary.replay_lab.status.get('top_raw_reasons', {}) if summary.replay_lab.status.available else {}).items() %}

@@ -13,6 +13,7 @@ from app.services.llm_review_settings_service import update_llm_review_settings
 from app.services.local_engine_settings_service import update_local_engine_settings
 from app.services.ops_summary_service import build_ops_summary
 from app.services.profile_service import set_active_profile_mode
+from app.services.replay_experiments_service import append_replay_experiment, load_replay_baseline, save_replay_baseline
 from app.services.replay_lab_service import STATUS_PATH, load_replay_lab_settings, update_replay_lab_settings
 
 
@@ -197,6 +198,10 @@ async def ops_run_replay_lab() -> RedirectResponse:
     stderr = (proc.stderr or "").strip()
     if proc.returncode == 0 and stdout:
         STATUS_PATH.write_text(stdout + "\n", encoding="utf-8")
+        try:
+            append_replay_experiment(json.loads(stdout))
+        except json.JSONDecodeError:
+            pass
         return RedirectResponse(url="/ops?message=replay_lab_run_ok", status_code=303)
     error_payload = {
         "available": True,
@@ -208,6 +213,19 @@ async def ops_run_replay_lab() -> RedirectResponse:
     STATUS_PATH.write_text(json.dumps(error_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     short_error = (stderr or stdout or f"returncode={proc.returncode}").replace("\n", " | ")[:500]
     return RedirectResponse(url=f"/ops?error=replay_lab_run_failed:{short_error}", status_code=303)
+
+
+@router.post("/ops/replay-lab/save-baseline")
+async def ops_save_replay_baseline() -> RedirectResponse:
+    status_payload = STATUS_PATH.read_text(encoding="utf-8").strip() if STATUS_PATH.exists() else ""
+    if not status_payload:
+        return RedirectResponse(url="/ops?error=replay_baseline_missing_status", status_code=303)
+    try:
+        payload = json.loads(status_payload)
+    except json.JSONDecodeError:
+        return RedirectResponse(url="/ops?error=replay_baseline_invalid_status", status_code=303)
+    save_replay_baseline(payload)
+    return RedirectResponse(url="/ops?message=replay_baseline_saved", status_code=303)
 
 
 @router.post("/ops/llm-review/settings")
