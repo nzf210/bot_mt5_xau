@@ -243,6 +243,30 @@
   </section>
 
   <section class="card">
+    <h2>Bootstrap Candidate Workflow</h2>
+    <dl class="kv">
+      <div><dt>Candidate Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.rows or '-' }}</dd></div>
+      <div><dt>Buy Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.buy_rows or '-' }}</dd></div>
+      <div><dt>Sell Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.sell_rows or '-' }}</dd></div>
+      <div><dt>Profitable Rows</dt><dd>{{ summary.bootstrap_workflow.dataset.profitable_rows or '-' }}</dd></div>
+      <div><dt>Accuracy</dt><dd>{{ summary.bootstrap_workflow.evaluation.accuracy or '-' }}</dd></div>
+      <div><dt>Promotion Candidate</dt><dd>{{ summary.bootstrap_workflow.evaluation.promotion_candidate or '-' }}</dd></div>
+    </dl>
+    <form method="post" action="/ops/bootstrap/build-candidate" class="action-form">
+      <button type="submit">Build Bootstrap Candidate</button>
+      <p class="muted">Membuat dataset candidate dari replay baseline terakhir dengan row BUY/SELL yang bisa dipakai untuk bootstrap model awal.</p>
+    </form>
+    <form method="post" action="/ops/bootstrap/train-model" class="action-form">
+      <button type="submit">Train Bootstrap Model</button>
+      <p class="muted">Melatih model awal dari candidate dataset bootstrap. Ini untuk diagnosis/model candidate, bukan auto-promote live.</p>
+    </form>
+    <form method="post" action="/ops/bootstrap/evaluate-model" class="action-form">
+      <button type="submit">Evaluate Bootstrap Model</button>
+      <p class="muted">Evaluasi model bootstrap di dataset bootstrap yang sama untuk sanity check awal sebelum workflow evaluasi lebih ketat.</p>
+    </form>
+  </section>
+
+  <section class="card">
     <h2>Pair-Session Policy</h2>
     <p>
       Configured:

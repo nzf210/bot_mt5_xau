@@ -9,6 +9,7 @@ from app.services.kill_switch_service import get_kill_switch
 from app.services.llm_review_settings_service import load_llm_review_settings
 from app.services.local_engine_settings_service import load_local_engine_settings
 from app.services.profile_service import get_active_profile_mode, get_profile_settings, list_profile_modes
+from app.services.bootstrap_workflow_service import load_bootstrap_workflow_summary
 from app.services.replay_experiments_service import load_recent_replay_experiments, load_replay_baseline
 from app.services.replay_lab_service import load_replay_lab_settings, load_replay_lab_status
 from app.services.provider_registry import get_provider_status_summary
@@ -281,6 +282,7 @@ def build_ops_summary() -> dict:
     replay_lab_status = load_replay_lab_status()
     replay_baseline = load_replay_baseline()
     replay_experiments = load_recent_replay_experiments()
+    bootstrap_workflow = load_bootstrap_workflow_summary()
 
     return {
         "ok": True,
@@ -322,5 +324,6 @@ def build_ops_summary() -> dict:
             "baseline": replay_baseline,
             "recent_runs": replay_experiments,
         },
+        "bootstrap_workflow": bootstrap_workflow,
         "readiness": _build_readiness(review, kill_switch, mode),
     }

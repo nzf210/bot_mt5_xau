@@ -197,13 +197,29 @@ Gunakan ini untuk:
 - membandingkan replay baru vs baseline
 - menyiapkan langkah berikutnya menuju bootstrap candidate
 
-## 9. Pair-Session Policy
+## 9. Bootstrap Candidate Workflow
+Bagian ini menjembatani replay baseline ke model candidate awal.
+
+### Build Bootstrap Candidate
+Membuat dataset candidate dari replay baseline terakhir.
+
+### Train Bootstrap Model
+Melatih model awal dari dataset bootstrap candidate.
+
+### Evaluate Bootstrap Model
+Evaluasi sanity-check awal model bootstrap.
+
+Catatan:
+- ini masih tahap candidate, bukan izin live trading
+- gunakan setelah baseline replay terbaik sementara dibekukan
+
+## 10. Pair-Session Policy
 Menampilkan policy pair x session yang aktif.
 
-## 10. Adaptive Pair-Session Insight
+## 11. Adaptive Pair-Session Insight
 Menampilkan hasil analytics pair-session jika report tersedia.
 
-## 11. Trade Summary / Decision Summary
+## 12. Trade Summary / Decision Summary
 Dipakai untuk memantau hasil runtime dan filter reasons.
 
 ## Recommended Safe Workflow

@@ -228,6 +228,30 @@ async def ops_save_replay_baseline() -> RedirectResponse:
     return RedirectResponse(url="/ops?message=replay_baseline_saved", status_code=303)
 
 
+@router.post("/ops/bootstrap/build-candidate")
+async def ops_build_bootstrap_candidate() -> RedirectResponse:
+    ok, out = _run_script("scripts/build_bootstrap_candidate_dataset.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=bootstrap_build_failed:{out}", status_code=303)
+    return RedirectResponse(url="/ops?message=bootstrap_build_ok", status_code=303)
+
+
+@router.post("/ops/bootstrap/train-model")
+async def ops_train_bootstrap_model() -> RedirectResponse:
+    ok, out = _run_script("scripts/train_bootstrap_model.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=bootstrap_train_failed:{out}", status_code=303)
+    return RedirectResponse(url="/ops?message=bootstrap_train_ok", status_code=303)
+
+
+@router.post("/ops/bootstrap/evaluate-model")
+async def ops_evaluate_bootstrap_model() -> RedirectResponse:
+    ok, out = _run_script("scripts/evaluate_bootstrap_model.py")
+    if not ok:
+        return RedirectResponse(url=f"/ops?error=bootstrap_evaluate_failed:{out}", status_code=303)
+    return RedirectResponse(url="/ops?message=bootstrap_evaluate_ok", status_code=303)
+
+
 @router.post("/ops/llm-review/settings")
 async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: str = Form("3h")) -> RedirectResponse:
     normalized = enabled.strip().lower()
