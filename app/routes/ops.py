@@ -172,26 +172,42 @@ async def ops_update_replay_lab_settings(
 @router.post("/ops/replay-lab/run")
 async def ops_run_replay_lab() -> RedirectResponse:
     settings = load_replay_lab_settings()
-    ok, out = _run_script(
-        "scripts/build_historical_replay_dataset.py",
-        [
-            "--csv", settings["csv_path"],
-            "--symbol", settings["symbol"],
-            "--timeframe", settings["timeframe"],
-            "--higher-timeframe", settings["higher_timeframe"],
-            "--mode", settings["mode"],
-            "--lookback-bars", str(settings["lookback_bars"]),
-            "--outcome-horizon-bars", str(settings["outcome_horizon_bars"]),
-            "--output-prefix", settings["output_prefix"],
-            "--point-size", str(settings.get("point_size", 0.01)),
-        ],
+    script_path = ROOT / "scripts" / "build_historical_replay_dataset.py"
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--csv", settings["csv_path"],
+        "--symbol", settings["symbol"],
+        "--timeframe", settings["timeframe"],
+        "--higher-timeframe", settings["higher_timeframe"],
+        "--mode", settings["mode"],
+        "--lookback-bars", str(settings["lookback_bars"]),
+        "--outcome-horizon-bars", str(settings["outcome_horizon_bars"]),
+        "--output-prefix", settings["output_prefix"],
+        "--point-size", str(settings.get("point_size", 0.01)),
+    ]
+    proc = subprocess.run(
+        cmd,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
     )
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    if ok:
-        STATUS_PATH.write_text(out + "\n", encoding="utf-8")
+    stdout = (proc.stdout or "").strip()
+    stderr = (proc.stderr or "").strip()
+    if proc.returncode == 0 and stdout:
+        STATUS_PATH.write_text(stdout + "\n", encoding="utf-8")
         return RedirectResponse(url="/ops?message=replay_lab_run_ok", status_code=303)
-    STATUS_PATH.write_text('{"available": true, "ok": false, "error": ' + json.dumps(out) + '}\n', encoding="utf-8")
-    return RedirectResponse(url=f"/ops?error=replay_lab_run_failed:{out}", status_code=303)
+    error_payload = {
+        "available": True,
+        "ok": False,
+        "returncode": proc.returncode,
+        "stdout": stdout[-4000:],
+        "stderr": stderr[-4000:],
+    }
+    STATUS_PATH.write_text(json.dumps(error_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    short_error = (stderr or stdout or f"returncode={proc.returncode}").replace("\n", " | ")[:500]
+    return RedirectResponse(url=f"/ops?error=replay_lab_run_failed:{short_error}", status_code=303)
 
 
 @router.post("/ops/llm-review/settings")
