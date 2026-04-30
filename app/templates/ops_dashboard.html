@@ -91,12 +91,21 @@
     <h2>Local Engine</h2>
     <dl class="kv">
       <div><dt>Spread/ATR Max Ratio</dt><dd>{{ summary.local_engine.settings.spread_atr_max_ratio }}</dd></div>
+      <div><dt>RSI Bullish Threshold</dt><dd>{{ summary.local_engine.settings.rsi_bullish_threshold }}</dd></div>
+      <div><dt>RSI Bearish Threshold</dt><dd>{{ summary.local_engine.settings.rsi_bearish_threshold }}</dd></div>
+      <div><dt>Min RR Threshold</dt><dd>{{ summary.local_engine.settings.min_rr_threshold }}</dd></div>
     </dl>
     <form method="post" action="/ops/local-engine/settings" class="action-form">
       <label for="spread_atr_max_ratio">Spread/ATR Max Ratio</label>
       <input id="spread_atr_max_ratio" name="spread_atr_max_ratio" type="number" min="0.01" max="1" step="0.01" value="{{ summary.local_engine.settings.spread_atr_max_ratio }}" />
+      <label for="rsi_bullish_threshold">RSI Bullish Threshold</label>
+      <input id="rsi_bullish_threshold" name="rsi_bullish_threshold" type="number" min="0" max="100" step="0.1" value="{{ summary.local_engine.settings.rsi_bullish_threshold }}" />
+      <label for="rsi_bearish_threshold">RSI Bearish Threshold</label>
+      <input id="rsi_bearish_threshold" name="rsi_bearish_threshold" type="number" min="0" max="100" step="0.1" value="{{ summary.local_engine.settings.rsi_bearish_threshold }}" />
+      <label for="min_rr_threshold">Min RR Threshold</label>
+      <input id="min_rr_threshold" name="min_rr_threshold" type="number" min="0.1" max="10" step="0.1" value="{{ summary.local_engine.settings.min_rr_threshold }}" />
       <button type="submit">Update Local Engine Settings</button>
-      <p class="muted">Controls how much spread is tolerated relative to ATR before the local engine returns WAIT. Useful for broker-specific GOLD spread tuning.</p>
+      <p class="muted">Controls spread tolerance, momentum strictness, and minimum reward/risk threshold. For replay diagnostics, lower strictness is okay. Replay lama tidak perlu dihapus, biarkan sebagai pembanding historis.</p>
     </form>
   </section>
 

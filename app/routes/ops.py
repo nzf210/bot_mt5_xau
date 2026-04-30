@@ -223,9 +223,19 @@ async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: s
 
 
 @router.post("/ops/local-engine/settings")
-async def ops_update_local_engine_settings(spread_atr_max_ratio: str = Form("0.12")) -> RedirectResponse:
+async def ops_update_local_engine_settings(
+    spread_atr_max_ratio: str = Form("0.12"),
+    rsi_bullish_threshold: str = Form("52"),
+    rsi_bearish_threshold: str = Form("48"),
+    min_rr_threshold: str = Form("1.0"),
+) -> RedirectResponse:
     try:
-        update_local_engine_settings(spread_atr_max_ratio=float(spread_atr_max_ratio))
+        update_local_engine_settings(
+            spread_atr_max_ratio=float(spread_atr_max_ratio),
+            rsi_bullish_threshold=float(rsi_bullish_threshold),
+            rsi_bearish_threshold=float(rsi_bearish_threshold),
+            min_rr_threshold=float(min_rr_threshold),
+        )
     except ValueError as exc:
         return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
     return RedirectResponse(url="/ops?message=local_engine_settings_updated", status_code=303)

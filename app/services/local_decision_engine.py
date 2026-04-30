@@ -38,6 +38,9 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     settings = get_settings()
     local_settings = load_local_engine_settings()
     spread_atr_max_ratio = float(local_settings.get("spread_atr_max_ratio", settings.local_spread_atr_max_ratio))
+    rsi_bullish_threshold = float(local_settings.get("rsi_bullish_threshold", 52.0))
+    rsi_bearish_threshold = float(local_settings.get("rsi_bearish_threshold", 48.0))
+    min_rr_threshold = float(local_settings.get("min_rr_threshold", 1.0))
 
     if len(market.ohlc) < 3:
         return _build_wait("Not enough candle history for local analysis", ["Need at least 3 candles"])
@@ -56,8 +59,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
 
     bullish_trend = close_price > ema20 > ema50 and market.trend_context.htf_trend == "bullish"
     bearish_trend = close_price < ema20 < ema50 and market.trend_context.htf_trend == "bearish"
-    bullish_momentum = rsi14 >= 55 and macd_main >= macd_signal
-    bearish_momentum = rsi14 <= 45 and macd_main <= macd_signal
+    bullish_momentum = rsi14 >= rsi_bullish_threshold and macd_main >= macd_signal
+    bearish_momentum = rsi14 <= rsi_bearish_threshold and macd_main <= macd_signal
 
     if atr14 <= 0:
         warnings.append("ATR unavailable or invalid")
@@ -68,6 +71,9 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     _append_debug_warning(warnings, "atr14", f"{atr14:.5f}")
     _append_debug_warning(warnings, "spread_atr_ratio", f"{atr_spread_ratio:.4f}")
     _append_debug_warning(warnings, "spread_atr_max_ratio", f"{spread_atr_max_ratio:.4f}")
+    _append_debug_warning(warnings, "rsi_bullish_threshold", f"{rsi_bullish_threshold:.2f}")
+    _append_debug_warning(warnings, "rsi_bearish_threshold", f"{rsi_bearish_threshold:.2f}")
+    _append_debug_warning(warnings, "min_rr_threshold", f"{min_rr_threshold:.2f}")
     if atr14 > 0 and atr_spread_ratio > spread_atr_max_ratio:
         return _build_wait("Spread too high relative to current volatility", warnings + ["Spread/ATR ratio too high"])
 
@@ -81,7 +87,7 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         stop_loss = min(support_1, close_price - atr14)
         take_profit = max(resistance_1, close_price + (atr14 * 2.0))
         rr = _rr(entry, stop_loss, take_profit)
-        if rr < 1.2:
+        if rr < min_rr_threshold:
             return _build_wait("Bullish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
         confidence = 82 if rr >= 1.7 else 74
         _append_debug_warning(warnings, "bullish_trend", str(bullish_trend).lower())
@@ -107,7 +113,7 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         stop_loss = max(resistance_1, close_price + atr14)
         take_profit = min(support_1, close_price - (atr14 * 2.0), support_2 if support_2 > 0 else close_price - (atr14 * 2.0))
         rr = _rr(entry, stop_loss, take_profit)
-        if rr < 1.2:
+        if rr < min_rr_threshold:
             return _build_wait("Bearish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
         confidence = 82 if rr >= 1.7 else 74
         _append_debug_warning(warnings, "bearish_trend", str(bearish_trend).lower())

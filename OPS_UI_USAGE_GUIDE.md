@@ -87,12 +87,34 @@ Contoh interpretasi:
 - `0.12` = lebih realistis untuk GOLD CFD dengan spread agak tebal
 - `0.15` = lebih longgar untuk testing broker tertentu
 
+### RSI Bullish Threshold
+Threshold RSI minimum untuk menganggap momentum bullish cukup kuat.
+
+Contoh:
+- `55` = lebih ketat
+- `52` = lebih longgar untuk replay diagnosis
+
+### RSI Bearish Threshold
+Threshold RSI maksimum untuk menganggap momentum bearish cukup kuat.
+
+Contoh:
+- `45` = lebih ketat
+- `48` = lebih longgar untuk replay diagnosis
+
+### Min RR Threshold
+Minimum reward/risk agar setup tidak langsung ditolak.
+
+Contoh:
+- `1.2` = lebih ketat
+- `1.0` = lebih longgar untuk diagnosis replay awal
+
 ### Update Local Engine Settings
 Simpan nilai baru tanpa mengedit `.env` manual.
 
 Catatan:
 - nilai lebih tinggi bisa membuat bot lebih sering memberi setup
 - nilai terlalu tinggi bisa meloloskan kondisi spread buruk
+- replay lama tidak perlu dihapus, biarkan sebagai pembanding historis setelah tuning baru dijalankan
 
 ## 7. LLM Periodic Review
 Bagian ini mengontrol slow-path external LLM review.
