@@ -150,7 +150,22 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     _append_debug_warning(warnings, "bearish_trend", str(bearish_trend).lower())
     _append_debug_warning(warnings, "bullish_momentum", str(bullish_momentum).lower())
     _append_debug_warning(warnings, "bearish_momentum", str(bearish_momentum).lower())
+
+    wait_reason = "Local setup is weak, conflicting, or incomplete"
+    if not bullish_trend and not bearish_trend and not bullish_momentum and not bearish_momentum:
+        wait_reason = "Both trend and momentum are not aligned"
+    elif not bullish_trend and not bearish_trend:
+        wait_reason = "Trend is not aligned"
+    elif not bullish_momentum and not bearish_momentum:
+        wait_reason = "Momentum is not aligned"
+    elif close_price <= support_1 and not bullish_trend:
+        wait_reason = "Price is not favorable for bullish continuation"
+    elif close_price >= resistance_1 and not bearish_trend:
+        wait_reason = "Price is not favorable for bearish continuation"
+    elif close_price >= resistance_2 or close_price <= support_2:
+        wait_reason = "Price is extended near outer support or resistance"
+
     return _build_wait(
-        "Local setup is weak, conflicting, or incomplete",
+        wait_reason,
         warnings + ["WAIT preferred until trend and momentum align more clearly"],
     )

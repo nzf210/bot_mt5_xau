@@ -176,7 +176,7 @@ Menjalankan replay historis menggunakan setting saat ini, lalu menyimpan summary
 Gunakan ini untuk:
 - audit kenapa engine sering `WAIT`
 - melihat raw buy/sell/wait vs filtered buy/sell/wait
-- mengecek `top raw reasons`
+- mengecek `top raw reasons` yang sekarang lebih granular
 - mengecek `top raw warnings`
 - mengecek top filter reasons sebelum masuk tahap training
 
