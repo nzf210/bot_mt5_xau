@@ -135,6 +135,7 @@ Bagian ini dipakai untuk diagnosis historis berbasis CSV.
 - `Lookback Bars`: jumlah candle yang dipakai untuk snapshot lokal
 - `Outcome Horizon Bars`: jumlah candle ke depan untuk evaluasi outcome
 - `Output Prefix`: nama prefix file hasil export replay
+- `Point Size`: konversi spread MT5 dari points menjadi price distance replay, misalnya `0.01` untuk banyak broker GOLD
 
 ### Save Replay Lab Settings
 Menyimpan setting replay historis saat ini.

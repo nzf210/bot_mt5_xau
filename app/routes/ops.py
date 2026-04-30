@@ -150,6 +150,7 @@ async def ops_update_replay_lab_settings(
     lookback_bars: str = Form("10"),
     outcome_horizon_bars: str = Form("12"),
     output_prefix: str = Form("historical_replay"),
+    point_size: str = Form("0.01"),
 ) -> RedirectResponse:
     try:
         update_replay_lab_settings(
@@ -161,6 +162,7 @@ async def ops_update_replay_lab_settings(
             lookback_bars=int(lookback_bars),
             outcome_horizon_bars=int(outcome_horizon_bars),
             output_prefix=output_prefix.strip(),
+            point_size=float(point_size),
         )
     except Exception as exc:
         return RedirectResponse(url=f"/ops?error=replay_lab_settings_failed:{str(exc)}", status_code=303)
@@ -181,6 +183,7 @@ async def ops_run_replay_lab() -> RedirectResponse:
             "--lookback-bars", str(settings["lookback_bars"]),
             "--outcome-horizon-bars", str(settings["outcome_horizon_bars"]),
             "--output-prefix", settings["output_prefix"],
+            "--point-size", str(settings.get("point_size", 0.01)),
         ],
     )
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)

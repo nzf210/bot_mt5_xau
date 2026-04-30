@@ -162,8 +162,10 @@
       <input id="replay_outcome_horizon_bars" name="outcome_horizon_bars" type="number" min="1" step="1" value="{{ summary.replay_lab.settings.outcome_horizon_bars }}" />
       <label for="replay_output_prefix">Output Prefix</label>
       <input id="replay_output_prefix" name="output_prefix" type="text" value="{{ summary.replay_lab.settings.output_prefix }}" />
+      <label for="replay_point_size">Point Size</label>
+      <input id="replay_point_size" name="point_size" type="number" min="0.00001" step="0.00001" value="{{ summary.replay_lab.settings.point_size }}" />
       <button type="submit">Save Replay Lab Settings</button>
-      <p class="muted">Set lokasi CSV historical dan parameter replay sebelum menjalankan diagnosis historis.</p>
+      <p class="muted">Set lokasi CSV historical dan parameter replay sebelum menjalankan diagnosis historis. Gunakan <code>Point Size</code> untuk mengonversi spread MT5 dari points menjadi price distance yang benar, misalnya <code>0.01</code> untuk banyak broker GOLD.</p>
     </form>
     <form method="post" action="/ops/replay-lab/run" class="action-form">
       <button type="submit">Run Historical Replay</button>

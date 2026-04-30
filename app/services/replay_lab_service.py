@@ -16,6 +16,7 @@ DEFAULT_SETTINGS = {
     "lookback_bars": 10,
     "outcome_horizon_bars": 12,
     "output_prefix": "xauusd_m5_replay",
+    "point_size": 0.01,
 }
 
 

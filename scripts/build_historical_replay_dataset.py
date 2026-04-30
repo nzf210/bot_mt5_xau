@@ -28,6 +28,7 @@ class ReplayConfig:
     mode: str
     lookback_bars: int
     outcome_horizon_bars: int
+    point_size: float
     session_tz: str = "UTC"
 
 
@@ -265,10 +266,10 @@ def build_market_request(df: pd.DataFrame, idx: int, cfg: ReplayConfig) -> Marke
         for bars in hist.itertuples()
     ]
     close_price = float(row.close)
-    spread = float(row.spread or 0.0)
-    point_spread = spread if spread > 0 else max(close_price * 0.00005, 0.01)
+    spread_points = float(row.spread or 0.0)
+    spread_price = (spread_points * float(cfg.point_size)) if spread_points > 0 else max(close_price * 0.00005, float(cfg.point_size))
     bid = close_price
-    ask = close_price + point_spread
+    ask = close_price + spread_price
     return MarketRequest(
         symbol=cfg.symbol,
         timeframe=cfg.timeframe,
@@ -276,7 +277,7 @@ def build_market_request(df: pd.DataFrame, idx: int, cfg: ReplayConfig) -> Marke
         session=session_from_ts(row.time),
         bid=bid,
         ask=ask,
-        spread=point_spread,
+        spread=spread_points,
         ohlc=ohlc,
         indicators=Indicators(
             ema20=float(row.ema20),
@@ -389,6 +390,7 @@ def main() -> None:
     parser.add_argument("--lookback-bars", type=int, default=10)
     parser.add_argument("--outcome-horizon-bars", type=int, default=12)
     parser.add_argument("--output-prefix", default="historical_replay")
+    parser.add_argument("--point-size", type=float, default=0.01)
     args = parser.parse_args()
 
     cfg = ReplayConfig(
@@ -398,6 +400,7 @@ def main() -> None:
         mode=args.mode,
         lookback_bars=args.lookback_bars,
         outcome_horizon_bars=args.outcome_horizon_bars,
+        point_size=args.point_size,
     )
 
     EXPORTS.mkdir(parents=True, exist_ok=True)
@@ -447,6 +450,7 @@ def main() -> None:
             "macd_signal": market.indicators.macd_signal,
             "atr14": market.indicators.atr14,
             "spread": market.spread,
+            "point_size": cfg.point_size,
             "support_1": market.support_resistance.support_1,
             "support_2": market.support_resistance.support_2,
             "resistance_1": market.support_resistance.resistance_1,
