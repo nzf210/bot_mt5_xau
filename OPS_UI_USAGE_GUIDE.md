@@ -203,6 +203,14 @@ Bagian ini menjembatani replay baseline ke model candidate awal.
 ### Build Bootstrap Candidate
 Membuat dataset candidate dari replay baseline terakhir.
 
+Dataset candidate sekarang juga menambahkan feature enrichment seperti:
+- gap EMA
+- ATR-normalized distances
+- spread/ATR ratio
+- distance to support/resistance
+- RR x confidence
+- target tambahan seperti TP hit dan RR-positive outcome
+
 ### Train Bootstrap Model
 Melatih model awal dari dataset bootstrap candidate.
 

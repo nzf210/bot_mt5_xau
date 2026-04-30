@@ -29,6 +29,22 @@ def main() -> None:
         raise SystemExit("no tradable rows in replay dataset")
 
     candidate["target_profitable"] = candidate["outcome_pnl"].fillna(0.0) > 0
+    candidate["target_tp_hit"] = candidate["outcome_label"].fillna("").eq("tp_hit")
+    candidate["target_rr_positive"] = candidate["outcome_pnl"].fillna(0.0) > (candidate["atr14"].fillna(0.0) * 0.1)
+
+    candidate["ema_gap"] = candidate["ema20"].fillna(0.0) - candidate["ema50"].fillna(0.0)
+    candidate["ema_gap_atr_norm"] = candidate["ema_gap"] / candidate["atr14"].replace(0, pd.NA)
+    candidate["sr_range"] = candidate["resistance_1"].fillna(0.0) - candidate["support_1"].fillna(0.0)
+    candidate["distance_to_support"] = candidate["entry"].fillna(0.0) - candidate["support_1"].fillna(0.0)
+    candidate["distance_to_resistance"] = candidate["resistance_1"].fillna(0.0) - candidate["entry"].fillna(0.0)
+    candidate["distance_to_support_atr_norm"] = candidate["distance_to_support"] / candidate["atr14"].replace(0, pd.NA)
+    candidate["distance_to_resistance_atr_norm"] = candidate["distance_to_resistance"] / candidate["atr14"].replace(0, pd.NA)
+    candidate["spread_atr_ratio"] = candidate["spread"].fillna(0.0) / candidate["atr14"].replace(0, pd.NA)
+    candidate["rr_x_confidence"] = candidate["risk_reward"].fillna(0.0) * candidate["confidence"].fillna(0.0)
+    candidate["direction_sign"] = candidate["decision"].map({"BUY": 1, "SELL": -1}).fillna(0)
+    candidate["atr_pct_of_entry"] = candidate["atr14"].fillna(0.0) / candidate["entry"].replace(0, pd.NA)
+
+    candidate = candidate.replace([pd.NA, float("inf"), float("-inf")], 0)
     candidate.to_csv(OUTPUT_CSV, index=False)
 
     summary = {
@@ -38,6 +54,8 @@ def main() -> None:
         "sell_rows": int((candidate["decision"] == "SELL").sum()),
         "profitable_rows": int(candidate["target_profitable"].sum()),
         "loss_rows": int((~candidate["target_profitable"]).sum()),
+        "tp_hit_rows": int(candidate["target_tp_hit"].sum()),
+        "rr_positive_rows": int(candidate["target_rr_positive"].sum()),
         "output_csv": str(OUTPUT_CSV),
     }
     OUTPUT_JSON.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

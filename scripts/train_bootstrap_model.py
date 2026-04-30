@@ -20,6 +20,9 @@ META_PATH = MODEL_DIR / "bootstrap_model_meta.json"
 NUMERIC = [
     "confidence", "risk_reward", "spread", "ema20", "ema50", "rsi14", "macd_main", "macd_signal", "atr14",
     "entry", "stop_loss", "take_profit",
+    "ema_gap", "ema_gap_atr_norm", "sr_range", "distance_to_support", "distance_to_resistance",
+    "distance_to_support_atr_norm", "distance_to_resistance_atr_norm", "spread_atr_ratio", "rr_x_confidence",
+    "direction_sign", "atr_pct_of_entry",
 ]
 CATEGORICAL = ["decision", "session", "timeframe"]
 
