@@ -5,6 +5,10 @@ from app.schemas import MarketRequest
 from app.services.model_service import score_market_with_model
 
 
+def _append_debug_warning(warnings: list[str], key: str, value: str) -> None:
+    warnings.append(f"{key}={value}")
+
+
 def _rr(entry: float, stop_loss: float, take_profit: float) -> float:
     risk = abs(entry - stop_loss)
     reward = abs(take_profit - entry)
@@ -42,6 +46,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     macd_main = float(market.indicators.macd_main or 0.0)
     macd_signal = float(market.indicators.macd_signal or 0.0)
     spread = float(market.spread)
+    spread_price = abs(float(market.ask) - float(market.bid))
+    atr_spread_ratio = (spread_price / atr14) if atr14 > 0 else 0.0
 
     bullish_trend = close_price > ema20 > ema50 and market.trend_context.htf_trend == "bullish"
     bearish_trend = close_price < ema20 < ema50 and market.trend_context.htf_trend == "bearish"
@@ -52,7 +58,11 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         warnings.append("ATR unavailable or invalid")
     if spread <= 0:
         warnings.append("Spread invalid")
-    if atr14 > 0 and spread > atr14 * 8:
+    _append_debug_warning(warnings, "spread_points", f"{spread:.2f}")
+    _append_debug_warning(warnings, "spread_price", f"{spread_price:.5f}")
+    _append_debug_warning(warnings, "atr14", f"{atr14:.5f}")
+    _append_debug_warning(warnings, "spread_atr_ratio", f"{atr_spread_ratio:.4f}")
+    if atr14 > 0 and atr_spread_ratio > 0.08:
         return _build_wait("Spread too high relative to current volatility", warnings + ["Spread/ATR ratio too high"])
 
     support_1 = float(market.support_resistance.support_1)
@@ -68,6 +78,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         if rr < 1.2:
             return _build_wait("Bullish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
         confidence = 82 if rr >= 1.7 else 74
+        _append_debug_warning(warnings, "bullish_trend", str(bullish_trend).lower())
+        _append_debug_warning(warnings, "bullish_momentum", str(bullish_momentum).lower())
         td = TradeDecision(
             decision="BUY",
             confidence=confidence,
@@ -92,6 +104,8 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
         if rr < 1.2:
             return _build_wait("Bearish setup exists but reward-to-risk is still too weak", warnings + [f"RR={rr}"])
         confidence = 82 if rr >= 1.7 else 74
+        _append_debug_warning(warnings, "bearish_trend", str(bearish_trend).lower())
+        _append_debug_warning(warnings, "bearish_momentum", str(bearish_momentum).lower())
         td = TradeDecision(
             decision="SELL",
             confidence=confidence,
@@ -111,6 +125,10 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     if close_price >= resistance_2 or close_price <= support_2:
         warnings.append("Price is extended near outer support/resistance")
 
+    _append_debug_warning(warnings, "bullish_trend", str(bullish_trend).lower())
+    _append_debug_warning(warnings, "bearish_trend", str(bearish_trend).lower())
+    _append_debug_warning(warnings, "bullish_momentum", str(bullish_momentum).lower())
+    _append_debug_warning(warnings, "bearish_momentum", str(bearish_momentum).lower())
     return _build_wait(
         "Local setup is weak, conflicting, or incomplete",
         warnings + ["WAIT preferred until trend and momentum align more clearly"],
