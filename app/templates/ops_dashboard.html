@@ -284,7 +284,7 @@
     </dl>
     <h3>Dataset Readiness Metrics</h3>
     <ul>
-      {% for key, value in summary.learning_cycle.readiness_report.metrics.items() %}
+      {% for key, value in (summary.learning_cycle.readiness_report.get('metrics', {}) or {}).items() %}
       <li>{{ key }}: {{ value }}</li>
       {% else %}
       <li class="muted">No readiness metrics yet</li>
@@ -292,7 +292,7 @@
     </ul>
     <h3>Dataset Readiness Notes</h3>
     <ul>
-      {% for note in summary.learning_cycle.readiness_report.notes %}
+      {% for note in summary.learning_cycle.readiness_report.get('notes', []) or [] %}
       <li>{{ note }}</li>
       {% else %}
       <li class="muted">No readiness notes</li>
