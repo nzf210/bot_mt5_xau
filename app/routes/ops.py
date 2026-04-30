@@ -228,6 +228,7 @@ async def ops_update_local_engine_settings(
     rsi_bullish_threshold: str = Form("52"),
     rsi_bearish_threshold: str = Form("48"),
     min_rr_threshold: str = Form("1.0"),
+    trend_strictness: str = Form("strict"),
 ) -> RedirectResponse:
     try:
         update_local_engine_settings(
@@ -235,6 +236,7 @@ async def ops_update_local_engine_settings(
             rsi_bullish_threshold=float(rsi_bullish_threshold),
             rsi_bearish_threshold=float(rsi_bearish_threshold),
             min_rr_threshold=float(min_rr_threshold),
+            trend_strictness=trend_strictness.strip(),
         )
     except ValueError as exc:
         return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)

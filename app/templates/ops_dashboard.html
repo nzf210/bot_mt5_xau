@@ -94,6 +94,7 @@
       <div><dt>RSI Bullish Threshold</dt><dd>{{ summary.local_engine.settings.rsi_bullish_threshold }}</dd></div>
       <div><dt>RSI Bearish Threshold</dt><dd>{{ summary.local_engine.settings.rsi_bearish_threshold }}</dd></div>
       <div><dt>Min RR Threshold</dt><dd>{{ summary.local_engine.settings.min_rr_threshold }}</dd></div>
+      <div><dt>Trend Strictness</dt><dd>{{ summary.local_engine.settings.trend_strictness }}</dd></div>
     </dl>
     <form method="post" action="/ops/local-engine/settings" class="action-form">
       <label for="spread_atr_max_ratio">Spread/ATR Max Ratio</label>
@@ -104,6 +105,12 @@
       <input id="rsi_bearish_threshold" name="rsi_bearish_threshold" type="number" min="0" max="100" step="0.1" value="{{ summary.local_engine.settings.rsi_bearish_threshold }}" />
       <label for="min_rr_threshold">Min RR Threshold</label>
       <input id="min_rr_threshold" name="min_rr_threshold" type="number" min="0.1" max="10" step="0.1" value="{{ summary.local_engine.settings.min_rr_threshold }}" />
+      <label for="trend_strictness">Trend Strictness</label>
+      <select id="trend_strictness" name="trend_strictness">
+        {% for mode in ['strict', 'moderate', 'loose'] %}
+        <option value="{{ mode }}" {% if mode == summary.local_engine.settings.trend_strictness %}selected{% endif %}>{{ mode }}</option>
+        {% endfor %}
+      </select>
       <button type="submit">Update Local Engine Settings</button>
       <p class="muted">Controls spread tolerance, momentum strictness, and minimum reward/risk threshold. For replay diagnostics, lower strictness is okay. Replay lama tidak perlu dihapus, biarkan sebagai pembanding historis.</p>
     </form>

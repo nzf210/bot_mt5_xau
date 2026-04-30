@@ -41,6 +41,7 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     rsi_bullish_threshold = float(local_settings.get("rsi_bullish_threshold", 52.0))
     rsi_bearish_threshold = float(local_settings.get("rsi_bearish_threshold", 48.0))
     min_rr_threshold = float(local_settings.get("min_rr_threshold", 1.0))
+    trend_strictness = str(local_settings.get("trend_strictness", "strict"))
 
     if len(market.ohlc) < 3:
         return _build_wait("Not enough candle history for local analysis", ["Need at least 3 candles"])
@@ -57,8 +58,15 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     spread_price = abs(float(market.ask) - float(market.bid))
     atr_spread_ratio = (spread_price / atr14) if atr14 > 0 else 0.0
 
-    bullish_trend = close_price > ema20 > ema50 and market.trend_context.htf_trend == "bullish"
-    bearish_trend = close_price < ema20 < ema50 and market.trend_context.htf_trend == "bearish"
+    if trend_strictness == "loose":
+        bullish_trend = ema20 > ema50 and market.trend_context.htf_trend == "bullish"
+        bearish_trend = ema20 < ema50 and market.trend_context.htf_trend == "bearish"
+    elif trend_strictness == "moderate":
+        bullish_trend = close_price >= ema20 and ema20 > ema50 and market.trend_context.htf_trend == "bullish"
+        bearish_trend = close_price <= ema20 and ema20 < ema50 and market.trend_context.htf_trend == "bearish"
+    else:
+        bullish_trend = close_price > ema20 > ema50 and market.trend_context.htf_trend == "bullish"
+        bearish_trend = close_price < ema20 < ema50 and market.trend_context.htf_trend == "bearish"
     bullish_momentum = rsi14 >= rsi_bullish_threshold and macd_main >= macd_signal
     bearish_momentum = rsi14 <= rsi_bearish_threshold and macd_main <= macd_signal
 
@@ -74,6 +82,7 @@ def generate_local_decision(market: MarketRequest) -> TradeDecision:
     _append_debug_warning(warnings, "rsi_bullish_threshold", f"{rsi_bullish_threshold:.2f}")
     _append_debug_warning(warnings, "rsi_bearish_threshold", f"{rsi_bearish_threshold:.2f}")
     _append_debug_warning(warnings, "min_rr_threshold", f"{min_rr_threshold:.2f}")
+    _append_debug_warning(warnings, "trend_strictness", trend_strictness)
     if atr14 > 0 and atr_spread_ratio > spread_atr_max_ratio:
         return _build_wait("Spread too high relative to current volatility", warnings + ["Spread/ATR ratio too high"])
 

@@ -108,6 +108,14 @@ Contoh:
 - `1.2` = lebih ketat
 - `1.0` = lebih longgar untuk diagnosis replay awal
 
+### Trend Strictness
+Menentukan seberapa keras syarat alignment trend.
+
+Mode:
+- `strict`: close harus benar-benar di atas/bawah EMA alignment penuh
+- `moderate`: lebih longgar, cukup dekat dengan EMA20 sambil tetap searah HTF
+- `loose`: paling longgar, cukup arah EMA + HTF
+
 ### Update Local Engine Settings
 Simpan nilai baru tanpa mengedit `.env` manual.
 
