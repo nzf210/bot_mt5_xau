@@ -1,5 +1,4 @@
 from app.config import get_settings
-from app.services.local_engine_settings_service import update_local_engine_settings
 
 VALID_MODES = {"off", "semi", "full"}
 VALID_SCOPES = {"observe_only", "demo_learning", "guarded_live"}
@@ -77,6 +76,8 @@ def resolve_runtime_guardrails(base_profile: dict) -> dict:
 
 
 def apply_autopilot_preset_to_local_state() -> dict:
+    from app.services.local_engine_settings_service import update_local_engine_settings
+
     summary = load_autopilot_summary()
     preset = summary.get("preset_guardrails", {})
     local_engine = preset.get("local_engine", {}) or {}
