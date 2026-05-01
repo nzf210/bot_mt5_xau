@@ -13,6 +13,7 @@ from app.services.llm_review_settings_service import update_llm_review_settings
 from app.services.local_engine_settings_service import update_local_engine_settings
 from app.services.bootstrap_settings_service import update_bootstrap_settings
 from app.services.ops_summary_service import build_ops_summary
+from app.services.autopilot_service import load_autopilot_summary, apply_autopilot_preset_to_local_state
 from app.services.profile_service import set_active_profile_mode
 from app.services.replay_experiments_service import append_replay_experiment, load_replay_baseline, save_replay_baseline
 from app.services.replay_lab_service import STATUS_PATH, load_replay_lab_settings, update_replay_lab_settings
@@ -81,6 +82,11 @@ async def ops_set_kill_switch(active: str = Form(...), reason: str = Form("")) -
 
 @router.post("/ops/approval/prepare-config")
 async def ops_prepare_candidate_config() -> RedirectResponse:
+    autopilot = load_autopilot_summary()
+    if autopilot.get("mode") == "off":
+        return RedirectResponse(url="/ops?error=approval_prepare_blocked_by_autopilot_off", status_code=303)
+    if not autopilot.get("allow_config_tuning"):
+        return RedirectResponse(url="/ops?error=approval_prepare_blocked_by_autopilot_tuning_disabled", status_code=303)
     ok1, out1 = _run_script("scripts/generate_config_recommendation.py")
     ok2, out2 = _run_script("scripts/auto_apply_candidate_config.py") if ok1 else (False, "skipped")
     ok3, out3 = _run_script("scripts/compare_config_vs_recommendation.py") if ok2 else (False, "skipped")
@@ -101,9 +107,14 @@ async def ops_backup_current_model() -> RedirectResponse:
 @router.post("/ops/approval/apply-config")
 async def ops_apply_candidate_config(confirm: str = Form("")) -> RedirectResponse:
     summary = build_ops_summary()
+    autopilot = summary.get("autopilot", {})
     approval = summary.get("approval", {})
     if confirm.strip().lower() != "apply":
         return RedirectResponse(url="/ops?error=approval_apply_config_requires_confirm_apply", status_code=303)
+    if autopilot.get("mode") == "off":
+        return RedirectResponse(url="/ops?error=approval_apply_config_blocked_by_autopilot_off", status_code=303)
+    if autopilot.get("require_approval_for_major_changes", True) and autopilot.get("mode") != "full":
+        return RedirectResponse(url="/ops?error=approval_apply_config_requires_full_autopilot_or_policy_override", status_code=303)
     if approval.get("rollback_recommended"):
         return RedirectResponse(url="/ops?error=approval_apply_config_blocked_by_rollback_signal", status_code=303)
     if not approval.get("candidate_config_exists"):
@@ -272,6 +283,19 @@ async def ops_update_llm_review_settings(enabled: str = Form("true"), cadence: s
     except ValueError as exc:
         return RedirectResponse(url=f"/ops?error={str(exc)}", status_code=303)
     return RedirectResponse(url="/ops?message=llm_review_settings_updated", status_code=303)
+
+
+@router.post("/ops/autopilot/apply-preset")
+async def ops_apply_autopilot_preset(confirm: str = Form("")) -> RedirectResponse:
+    summary = load_autopilot_summary()
+    if confirm.strip().lower() != "apply":
+        return RedirectResponse(url="/ops?error=autopilot_apply_preset_requires_confirm_apply", status_code=303)
+    if summary.get("mode") == "off":
+        return RedirectResponse(url="/ops?error=autopilot_apply_preset_blocked_in_off_mode", status_code=303)
+    result = apply_autopilot_preset_to_local_state()
+    if not result.get("ok"):
+        return RedirectResponse(url=f"/ops?error=autopilot_apply_preset_failed:{result.get('reason','unknown')}", status_code=303)
+    return RedirectResponse(url="/ops?message=autopilot_apply_preset_ok", status_code=303)
 
 
 @router.post("/ops/local-engine/settings")

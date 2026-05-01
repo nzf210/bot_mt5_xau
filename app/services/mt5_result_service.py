@@ -17,6 +17,9 @@ class TradeResultIngest(BaseModel):
     pnl: float
     result: str
     notes: str = ""
+    close_reason: str = ""
+    tp_hit: bool = False
+    sl_hit: bool = False
 
 
 def ingest_trade_result(payload: TradeResultIngest) -> dict:
@@ -34,6 +37,15 @@ def ingest_trade_result(payload: TradeResultIngest) -> dict:
         pnl=payload.pnl,
         result=payload.result,
         notes=payload.notes,
+        close_reason=payload.close_reason,
+        tp_hit=payload.tp_hit,
+        sl_hit=payload.sl_hit,
     )
     log_trade_event("trade_result_ingested", payload.model_dump())
-    return {"ok": True, "ingested": True}
+    return {
+        "ok": True,
+        "ingested": True,
+        "close_reason": payload.close_reason,
+        "tp_hit": payload.tp_hit,
+        "sl_hit": payload.sl_hit,
+    }

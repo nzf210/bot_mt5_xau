@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from app.services.autopilot_service import resolve_runtime_guardrails
+
 ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_PATH = ROOT / "data" / "local_engine_settings.json"
 DEFAULTS = {
@@ -17,15 +19,22 @@ DEFAULTS = {
 
 def load_local_engine_settings() -> dict:
     if not SETTINGS_PATH.exists():
-        return dict(DEFAULTS)
-    try:
-        payload = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return dict(DEFAULTS)
-    if not isinstance(payload, dict):
-        return dict(DEFAULTS)
-    merged = dict(DEFAULTS)
-    merged.update(payload)
+        base = dict(DEFAULTS)
+    else:
+        try:
+            payload = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        base = dict(DEFAULTS)
+        base.update(payload)
+
+    runtime = resolve_runtime_guardrails({})
+    preset = runtime.get("local_engine", {})
+    merged = dict(base)
+    for key, value in preset.items():
+        merged[key] = value
     return merged
 
 

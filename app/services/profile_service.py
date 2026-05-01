@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from app.config import get_settings
+from app.services.autopilot_service import resolve_runtime_guardrails
 
 
 ACTIVE_PROFILE_PATH = Path("data/active_profile.json")
@@ -62,4 +63,5 @@ def list_profile_modes() -> list[str]:
 
 
 def get_profile_settings(mode: str) -> dict:
-    return _enrich_profile(mode)
+    profile = _enrich_profile(mode)
+    return resolve_runtime_guardrails(profile)["profile"]

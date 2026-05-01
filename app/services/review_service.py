@@ -13,6 +13,7 @@ def _build_trade_summary(trade_rows, symbol: str | None = None, timeframe: str |
     by_result = Counter()
     by_symbol = Counter()
     by_timeframe = Counter()
+    by_close_reason = Counter()
 
     for row in trade_rows:
         if symbol and row["symbol"] != symbol:
@@ -25,6 +26,7 @@ def _build_trade_summary(trade_rows, symbol: str | None = None, timeframe: str |
         by_result[result] += 1
         by_symbol[row["symbol"]] += 1
         by_timeframe[row["timeframe"]] += 1
+        by_close_reason[row["close_reason"] or "unknown"] += 1
         if result == "win":
             wins += 1
         elif result == "loss":
@@ -40,6 +42,7 @@ def _build_trade_summary(trade_rows, symbol: str | None = None, timeframe: str |
         "by_result": dict(by_result),
         "by_symbol": dict(by_symbol),
         "by_timeframe": dict(by_timeframe),
+        "by_close_reason": dict(by_close_reason),
     }
 
 

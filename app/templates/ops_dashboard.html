@@ -417,6 +417,39 @@
   </section>
 
   <section class="card">
+    <h2>Autopilot</h2>
+    <dl class="kv">
+      <div><dt>Mode</dt><dd>{{ summary.autopilot.mode }}</dd></div>
+      <div><dt>Scope</dt><dd>{{ summary.autopilot.scope }}</dd></div>
+      <div><dt>Scheduler Enabled</dt><dd>{{ summary.autopilot.scheduler_enabled }}</dd></div>
+      <div><dt>Cadence Hours</dt><dd>{{ summary.autopilot.cadence_hours }}</dd></div>
+      <div><dt>Allow Config Tuning</dt><dd>{{ summary.autopilot.allow_config_tuning }}</dd></div>
+      <div><dt>Allow Model Promotion</dt><dd>{{ summary.autopilot.allow_model_promotion }}</dd></div>
+      <div><dt>Approval for Major Changes</dt><dd>{{ summary.autopilot.require_approval_for_major_changes }}</dd></div>
+      <div><dt>Run Learning Cycle</dt><dd>{{ summary.autopilot.effective.run_learning_cycle }}</dd></div>
+      <div><dt>Apply Low Risk Tuning</dt><dd>{{ summary.autopilot.effective.apply_low_risk_tuning }}</dd></div>
+      <div><dt>Live Trading Effectively Allowed</dt><dd>{{ summary.autopilot.effective.live_trading_effectively_allowed }}</dd></div>
+    </dl>
+    <h3>Preset Guardrails</h3>
+    <ul>
+      {% for key, value in summary.autopilot.preset_guardrails.items() %}
+      <li>{{ key }}: {{ value }}</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/ops/autopilot/apply-preset" class="action-form">
+      <label for="autopilot_apply_confirm">Type apply to confirm</label>
+      <input id="autopilot_apply_confirm" name="confirm" type="text" placeholder="apply" />
+      <button type="submit">Apply Autopilot Preset to Local Engine</button>
+      <p class="muted">Applies the current autopilot preset into persisted local-engine settings. Does not enable live trading or mutate host scheduler.</p>
+    </form>
+    <ul>
+      {% for note in summary.autopilot.notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
     <h2>Learning Cycle</h2>
     <dl class="kv">
       <div><dt>Available</dt><dd>{{ summary.learning_cycle.available }}</dd></div>
@@ -425,6 +458,7 @@
       <div><dt>Cycle OK</dt><dd>{{ summary.learning_cycle.ok }}</dd></div>
       <div><dt>Readiness</dt><dd>{{ summary.learning_cycle.readiness_level or '-' }}</dd></div>
       <div><dt>Allow Training</dt><dd>{{ summary.learning_cycle.allow_training }}</dd></div>
+      <div><dt>Autopilot Allows Training</dt><dd>{{ summary.learning_cycle.training_allowed_by_autopilot or summary.learning_cycle.gates.training_allowed_by_autopilot if summary.learning_cycle.gates is defined else '-' }}</dd></div>
       <div><dt>Promotion Recommended</dt><dd>{{ summary.learning_cycle.promotion_recommended }}</dd></div>
       <div><dt>Rollback Recommended</dt><dd>{{ summary.learning_cycle.rollback_recommended }}</dd></div>
     </dl>
@@ -477,6 +511,14 @@
       <div><dt>Losses</dt><dd>{{ summary.reviews.daily.trade_results.losses }}</dd></div>
       <div><dt>Win Rate</dt><dd>{{ summary.reviews.daily.trade_results.win_rate }}%</dd></div>
     </dl>
+    <h3>Close Reasons</h3>
+    <ul>
+      {% for key, value in summary.reviews.daily.trade_results.by_close_reason.items() %}
+      <li>{{ key }}: {{ value }}</li>
+      {% else %}
+      <li class="muted">No close reason data yet</li>
+      {% endfor %}
+    </ul>
   </section>
 
   <section class="card">

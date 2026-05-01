@@ -34,6 +34,25 @@ mt5_ai_bot/
 └── README.md
 ```
 
+## Autopilot mode
+Environment flags now support a first-pass autopilot status layer:
+- `AUTOPILOT_MODE=off|semi|full`
+- `AUTOPILOT_SCOPE=observe_only|demo_learning|guarded_live`
+- `AUTOPILOT_ALLOW_CONFIG_TUNING=true|false`
+- `AUTOPILOT_ALLOW_MODEL_PROMOTION=true|false`
+- `AUTOPILOT_REQUIRE_APPROVAL_FOR_MAJOR_CHANGES=true|false`
+- `AUTOPILOT_SCHEDULER_ENABLED=true|false`
+- `AUTOPILOT_CADENCE_HOURS=<int>`
+
+Current implementation is intentionally bounded:
+- exposes autopilot status in backend summary
+- does not silently enable live trading
+- does not auto-mutate `.env`
+- does not replace host scheduler configuration
+
+See also:
+- `AUTOPILOT_MODE_SPEC.md`
+
 ## Phase mapping
 ### Phase A, local pipeline
 Goal: MT5 -> Python -> Gemini -> Python -> MT5, no trade execution.

@@ -696,10 +696,10 @@ void SaveDebugSnapshot(string kind, string content)
    Print("Saved snapshot: ", fileName);
 }
 
-string BuildTradeResultPayload(DecisionResult &result, string positionTicket, double closePrice, double pnl, string finalResult, string notes)
+string BuildTradeResultPayload(DecisionResult &result, string positionTicket, double closePrice, double pnl, string finalResult, string notes, string closeReason = "", bool tpHit = false, bool slHit = false)
 {
    return StringFormat(
-      "{\"symbol\":\"%s\",\"timeframe\":\"%s\",\"mode\":\"%s\",\"decision_id\":\"%s\",\"decision\":\"%s\",\"position_ticket\":\"%s\",\"entry_price\":%.5f,\"close_price\":%.5f,\"stop_loss\":%.5f,\"take_profit\":%.5f,\"pnl\":%.2f,\"result\":\"%s\",\"notes\":\"%s\"}",
+      "{\"symbol\":\"%s\",\"timeframe\":\"%s\",\"mode\":\"%s\",\"decision_id\":\"%s\",\"decision\":\"%s\",\"position_ticket\":\"%s\",\"entry_price\":%.5f,\"close_price\":%.5f,\"stop_loss\":%.5f,\"take_profit\":%.5f,\"pnl\":%.2f,\"result\":\"%s\",\"notes\":\"%s\",\"close_reason\":\"%s\",\"tp_hit\":%s,\"sl_hit\":%s}",
       EscapeJson(_Symbol),
       TimeframeToString(PERIOD_CURRENT),
       GetModeString(),
@@ -712,7 +712,10 @@ string BuildTradeResultPayload(DecisionResult &result, string positionTicket, do
       result.take_profit,
       pnl,
       finalResult,
-      EscapeJson(notes)
+      EscapeJson(notes),
+      EscapeJson(closeReason),
+      tpHit ? "true" : "false",
+      slHit ? "true" : "false"
    );
 }
 
@@ -757,6 +760,9 @@ void TrackClosedPositionResult()
    double pnl = 0.0;
    double closePrice = 0.0;
    bool found = false;
+   bool tpHit = false;
+   bool slHit = false;
+   string closeReason = "";
    for(int i = HistoryDealsTotal() - 1; i >= 0; i--)
    {
       ulong dealTicket = HistoryDealGetTicket(i);
@@ -765,9 +771,26 @@ void TrackClosedPositionResult()
       long orderId = (long)HistoryDealGetInteger(dealTicket, DEAL_ORDER);
       if(orderId == g_lastTrackedPositionTicket)
       {
-         pnl += HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
-         closePrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+         double dealProfit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+         double dealPrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+         pnl += dealProfit;
+         closePrice = dealPrice;
          found = true;
+
+         if(g_lastTrackedTakeProfit > 0 && MathAbs(dealPrice - g_lastTrackedTakeProfit) <= (_Point * 3))
+         {
+            tpHit = true;
+            closeReason = "take_profit_or_near_tp";
+         }
+         else if(g_lastTrackedStopLoss > 0 && MathAbs(dealPrice - g_lastTrackedStopLoss) <= (_Point * 3))
+         {
+            slHit = true;
+            closeReason = "stop_loss_or_near_sl";
+         }
+         else if(closeReason == "")
+         {
+            closeReason = "closed_away_from_tp_sl";
+         }
       }
    }
 
@@ -780,10 +803,10 @@ void TrackClosedPositionResult()
       temp.entry = g_lastTrackedEntryPrice;
       temp.stop_loss = g_lastTrackedStopLoss;
       temp.take_profit = g_lastTrackedTakeProfit;
-      string resultPayload = BuildTradeResultPayload(temp, IntegerToString((int)g_lastTrackedPositionTicket), closePrice, pnl, resultLabel, "closed_position_report");
+      string resultPayload = BuildTradeResultPayload(temp, IntegerToString((int)g_lastTrackedPositionTicket), closePrice, pnl, resultLabel, "closed_position_report", closeReason, tpHit, slHit);
       string ingestResponse = PostTradeResult(resultPayload);
       Print("Closed trade result ingest response: ", ingestResponse);
-      LogBridgeEvent("trade_closed_reported", "", resultPayload, true, resultLabel);
+      LogBridgeEvent("trade_closed_reported", "", resultPayload, true, closeReason == "" ? resultLabel : closeReason);
    }
 
    g_lastTrackedPositionTicket = -1;
@@ -819,7 +842,7 @@ bool ExecuteApprovedTrade(DecisionResult &result)
       Print("Trade executed. Order=", trade.ResultOrder(), " deal=", trade.ResultDeal(), " decision=", result.decision);
       LogBridgeEvent("trade_executed", "", result.raw_response, true, result.decision);
       TrackOpenPosition(result);
-      string resultPayload = BuildTradeResultPayload(result, ticket, result.entry, 0.0, "open", "initial_ingest_after_execution");
+      string resultPayload = BuildTradeResultPayload(result, ticket, result.entry, 0.0, "open", "initial_ingest_after_execution", "position_opened", false, false);
       string ingestResponse = PostTradeResult(resultPayload);
       Print("Trade result ingest response: ", ingestResponse);
    }

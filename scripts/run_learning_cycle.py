@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.services.autopilot_service import load_autopilot_summary
 EXPORTS_DIR = ROOT / "data" / "exports"
 LEARNING_DIR = ROOT / "data" / "learning"
 STATUS_JSON = LEARNING_DIR / "learning_cycle_status.json"
@@ -67,6 +71,8 @@ def summarize_outputs() -> dict:
 def main() -> None:
     LEARNING_DIR.mkdir(parents=True, exist_ok=True)
 
+    autopilot = load_autopilot_summary()
+
     cycle = {
         "ok": True,
         "started_at": utc_now(),
@@ -74,6 +80,7 @@ def main() -> None:
         "steps": [],
         "gates": {},
         "outputs": {},
+        "autopilot": autopilot,
     }
 
     base_steps = [
@@ -92,7 +99,10 @@ def main() -> None:
 
     readiness_level = load_readiness_level()
     cycle["gates"]["readiness_level"] = readiness_level
-    allow_training = readiness_level in {"training_ready", "promotion_ready"}
+    autopilot_effective = autopilot.get("effective", {})
+    training_allowed_by_mode = bool(autopilot_effective.get("prepare_recommendations", False))
+    cycle["gates"]["training_allowed_by_autopilot"] = training_allowed_by_mode
+    allow_training = readiness_level in {"training_ready", "promotion_ready"} and training_allowed_by_mode
     cycle["gates"]["allow_training"] = allow_training
 
     if allow_training:
@@ -105,30 +115,74 @@ def main() -> None:
             if not step["ok"]:
                 cycle["ok"] = False
     else:
+        skip_reason = f"readiness_level={readiness_level}"
+        if not training_allowed_by_mode:
+            skip_reason = f"autopilot_mode_blocks_training:{autopilot.get('mode')}"
         cycle["steps"].append({
             "name": "train_setup_model",
             "script": "scripts/train_setup_model.py",
             "skipped": True,
-            "reason": f"readiness_level={readiness_level}",
+            "reason": skip_reason,
         })
         cycle["steps"].append({
             "name": "evaluate_setup_model",
             "script": "scripts/evaluate_setup_model.py",
             "skipped": True,
-            "reason": f"readiness_level={readiness_level}",
+            "reason": skip_reason,
         })
 
     evaluation = read_json(ROOT / "models" / "reports" / "model_evaluation.json", {})
     promotion_recommended = bool(evaluation.get("promotion_recommended", False))
     cycle["gates"]["promotion_recommended"] = promotion_recommended
-    cycle["gates"]["allow_promotion"] = False
+    allow_promotion = bool(autopilot_effective.get("allow_model_promotion", False)) and promotion_recommended
+    cycle["gates"]["allow_promotion"] = allow_promotion
 
-    cycle["steps"].append({
-        "name": "promote_candidate_model",
-        "script": "scripts/promote_candidate_model.py",
-        "skipped": True,
-        "reason": "manual_approval_required",
-    })
+    if allow_promotion:
+        step = run_step("promote_candidate_model", "scripts/promote_candidate_model.py")
+        cycle["steps"].append(step)
+        if not step["ok"]:
+            cycle["ok"] = False
+    else:
+        reason = "manual_approval_required"
+        if not autopilot_effective.get("allow_model_promotion", False):
+            reason = f"autopilot_mode_blocks_promotion:{autopilot.get('mode')}"
+        elif not promotion_recommended:
+            reason = "promotion_not_recommended"
+        cycle["steps"].append({
+            "name": "promote_candidate_model",
+            "script": "scripts/promote_candidate_model.py",
+            "skipped": True,
+            "reason": reason,
+        })
+
+    rollback_signal = read_json(EXPORTS_DIR / "rollback_trigger_check.json", {})
+    if autopilot.get("mode") == "full" and autopilot_effective.get("apply_low_risk_tuning", False):
+        if rollback_signal.get("rollback_recommended", False):
+            cycle["steps"].append({
+                "name": "autopilot_low_risk_tuning_apply",
+                "script": "internal",
+                "skipped": True,
+                "reason": "rollback_signal_active",
+            })
+        elif cycle["gates"].get("allow_promotion"):
+            cycle["steps"].append({
+                "name": "autopilot_low_risk_tuning_apply",
+                "script": "internal",
+                "skipped": True,
+                "reason": "promotion_path_active",
+            })
+        else:
+            for name, script in [
+                ("generate_config_recommendation", "scripts/generate_config_recommendation.py"),
+                ("auto_apply_candidate_config", "scripts/auto_apply_candidate_config.py"),
+                ("compare_config_vs_recommendation", "scripts/compare_config_vs_recommendation.py"),
+                ("build_approval_summary", "scripts/build_approval_summary.py"),
+            ]:
+                step = run_step(name, script)
+                cycle["steps"].append(step)
+                if not step["ok"]:
+                    cycle["ok"] = False
+                    break
 
     cycle["outputs"] = summarize_outputs()
     cycle["finished_at"] = utc_now()

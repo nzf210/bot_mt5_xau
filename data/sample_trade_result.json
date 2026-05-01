@@ -2,6 +2,7 @@
   "symbol": "XAUUSD",
   "timeframe": "M15",
   "mode": "demo",
+  "decision_id": "sample-decision-id",
   "decision": "BUY",
   "position_ticket": "123456789",
   "entry_price": 2345.10,
@@ -10,5 +11,8 @@
   "take_profit": 2348.90,
   "pnl": 24.00,
   "result": "win",
-  "notes": "tp_partial_or_manual_close"
+  "notes": "tp_partial_or_manual_close",
+  "close_reason": "take_profit_or_near_tp",
+  "tp_hit": true,
+  "sl_hit": false
 }

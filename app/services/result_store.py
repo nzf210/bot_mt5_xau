@@ -23,7 +23,10 @@ def init_result_store() -> None:
                 take_profit REAL NOT NULL,
                 pnl REAL NOT NULL,
                 result TEXT NOT NULL,
-                notes TEXT NOT NULL DEFAULT ''
+                notes TEXT NOT NULL DEFAULT '',
+                close_reason TEXT NOT NULL DEFAULT '',
+                tp_hit INTEGER NOT NULL DEFAULT 0,
+                sl_hit INTEGER NOT NULL DEFAULT 0
             )
             """
         )
@@ -37,14 +40,26 @@ def init_result_store() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_trade_results_decision_id ON trade_results(decision_id)"
         )
+        try:
+            conn.execute("ALTER TABLE trade_results ADD COLUMN close_reason TEXT NOT NULL DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE trade_results ADD COLUMN tp_hit INTEGER NOT NULL DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute("ALTER TABLE trade_results ADD COLUMN sl_hit INTEGER NOT NULL DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
 
-def record_trade_result(symbol: str, timeframe: str, mode: str, decision_id: str, decision: str, position_ticket: str, entry_price: float, close_price: float, stop_loss: float, take_profit: float, pnl: float, result: str, notes: str = "") -> None:
+def record_trade_result(symbol: str, timeframe: str, mode: str, decision_id: str, decision: str, position_ticket: str, entry_price: float, close_price: float, stop_loss: float, take_profit: float, pnl: float, result: str, notes: str = "", close_reason: str = "", tp_hit: bool = False, sl_hit: bool = False) -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO trade_results(ts, day, symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (utc_now_iso(), utc_date(), symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes),
+            "INSERT INTO trade_results(ts, day, symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes, close_reason, tp_hit, sl_hit) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (utc_now_iso(), utc_date(), symbol, timeframe, mode, decision_id, decision, position_ticket, entry_price, close_price, stop_loss, take_profit, pnl, result, notes, close_reason, int(tp_hit), int(sl_hit)),
         )
         conn.commit()
 

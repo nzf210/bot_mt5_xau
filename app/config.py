@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     default_session_allowlist: str = "London,NewYork,Overlap"
     symbol_session_policy_json: str = "{}"
 
+    autopilot_mode: str = "off"
+    autopilot_scope: str = "demo_learning"
+    autopilot_allow_config_tuning: bool = True
+    autopilot_allow_model_promotion: bool = False
+    autopilot_require_approval_for_major_changes: bool = True
+    autopilot_scheduler_enabled: bool = False
+    autopilot_cadence_hours: int = 6
+
     decision_log_path: str = "logs/ai_decisions.jsonl"
     event_log_path: str = "logs/trade_events.jsonl"
 

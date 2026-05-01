@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.services.autopilot_service import load_autopilot_summary
 EXPORTS = ROOT / "data" / "exports"
 MODELS = ROOT / "models"
 OUTPUT = EXPORTS / "approval_summary.json"
@@ -30,6 +35,8 @@ def main() -> None:
     candidate_model_exists = (MODELS / "candidates" / "candidate_model.pkl").exists()
     current_model_exists = (MODELS / "current" / "model.pkl").exists()
 
+    autopilot = load_autopilot_summary()
+
     summary = {
         "ok": True,
         "readiness_level": readiness.get("level"),
@@ -42,10 +49,15 @@ def main() -> None:
         "config_comparison": comparison,
         "recommended_symbol_session_policy": adaptive.get("recommended_config_values", {}).get("recommended_symbol_session_policy", {}),
         "approval_notes": [],
+        "autopilot": autopilot,
     }
 
     if summary["readiness_level"] not in {"training_ready", "promotion_ready"}:
         summary["approval_notes"].append("dataset_not_ready_for_training_or_promotion")
+    if autopilot.get("mode") == "off":
+        summary["approval_notes"].append("autopilot_off_major_mutation_should_remain_blocked")
+    if autopilot.get("mode") != "full":
+        summary["approval_notes"].append("autopilot_not_full_major_changes_should_remain_reviewed")
     if summary["rollback_recommended"]:
         summary["approval_notes"].append("rollback_signal_active_review_before_any_apply")
     if not candidate_env_exists and recommended_env_exists:
